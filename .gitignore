@@ -2,3 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
+local_testing.R
+.DS_Store
+test.csv
