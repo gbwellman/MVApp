@@ -278,7 +278,7 @@ fluidPage(
     # Tab 6 = = = = = = = = = = = = = = >> CORRELATION ANALYSIS << = = = = = = = = = = = = = = = = = =
     
     tabPanel(
-      "Establish correlations between traits",
+      "Correlation",
       icon = icon("compress"),
       navbarPage(
         "",
@@ -295,13 +295,15 @@ fluidPage(
             selectInput("corrplotMethod", "Plot Method", eval(formals(corrplot)$method)),
             selectInput("corType", "Plot Type", eval(formals(corrplot)$type)),
             selectInput("corOrder", "Order of the lable", eval(formals(corrplot)$order)),
-            actionButton("Go_table", label = "Click to see the correlation table with p value", icon = icon("play-circle"))
+            actionButton("Go_table", label = "See the correlation table with p value", icon = icon("play-circle"))
           ),
           
           
           mainPanel(
-            downloadButton('downloadCorrplot', icon("download")),
+            downloadButton('downloadCorrplot', ""),
             plotOutput("corrplot"),
+            br(),
+            uiOutput("cortable_button"),
             dataTableOutput('cor_table')
           )
         ),

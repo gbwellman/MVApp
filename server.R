@@ -2407,6 +2407,15 @@ function(input, output) {
     my_table()
   })
   
+  output$cortable_button <- renderUI({
+    if (is.null(my_table())) {
+      return()
+    }
+    else{
+      downloadButton("cortable_download_button", label = "")
+    }
+  })
+  
   ############ interactive scatter plot ##########
   
   output$Pheno1 <- renderUI({
