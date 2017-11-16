@@ -3201,8 +3201,6 @@ function(input, output) {
       )
   })
   
-  
-  
   PCA_coord_ind <- eventReactive(input$Go_PCA,{
     beginCol <-
       length(c(
@@ -3232,9 +3230,9 @@ function(input, output) {
     
     temporary <- res.pca$ind$coord
     
-    Le_table <- cbind(temp3, temporary)
-    names(Le_table) <- gsub("Dim.", "", names(Le_table), fixed=T)
-    Le_table
+    la_table <- cbind(temp3, temporary)
+    names(la_table) <- gsub("Dim.", "", names(la_table), fixed=T)
+    la_table
   })
   
   output$PCA_coordinates_ind <- renderDataTable({
@@ -3255,15 +3253,18 @@ function(input, output) {
   )
   
   output$PCA_scatterplot <- renderPlotly({
-    Le_table <- PCA_coord_ind()
-    Le_table$x_axis <- Le_table[,input$Which_PC1]
-    Le_table$y_axis <- Le_table[,input$Which_PC2]
-    Le_table$color <- Le_table[,input$PCA_Color]
-        super_plot <- ggplot(data = Le_table, aes(x = x_axis, y= y_axis, colour = color))
-        super_plot <- super_plot + geom_point()
+    la_table <- PCA_coord_ind()
+    PC_x_axis <- paste('Dim', input$Which_PC1)
+    PC_y_axis <- paste('Dim', input$Which_PC2)  
+    la_table$x_axis <- la_table[,input$Which_PC1]
+    la_table$y_axis <- la_table[,input$Which_PC2]
+    la_table$color <- la_table[,input$PCA_Color]
+      super_plot <- ggplot(data = la_table, aes(x = x_axis, y= y_axis, colour = color))
+      super_plot <- super_plot + geom_point()
+      super_plot <- super_plot + xlab(PC_x_axis)
+      super_plot <- super_plot + ylab(PC_y_axis)
       super_plot
     })
-  
   
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # - - - - - - - - - - - - >> CLUSTER ANALYSIS IN 8th TAB << - - - - - - - - - - -
