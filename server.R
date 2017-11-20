@@ -2027,15 +2027,45 @@ function(input, output) {
   
   output$Plotfacets <- renderUI({
     if(input$plot_facet == T){
+     if(input$SelectTime ==T){
+       if(input$SelectGeno==T){
       tagList(
         selectInput("Plotfacet_choice", "Independent Variable to split the plots",
-                    choices = c(setdiff(list(input$SelectGeno, input$SelectIV, input$SelectTime),input$HisIV)))
-      )
+                    #choices = c(setdiff(list(input$SelectGeno, input$SelectIV, input$SelectTime),input$HisIV)))
+                    choices = c(input$SelectGeno, input$SelectTime,input$HisIV)))
+      
+       }
+     
+      if(input$SelectGeno==F){
+        tagList(
+          selectInput("Plotfacet_choice", "Independent Variable to split the plots",
+                      #choices = c(setdiff(list(input$SelectIV, input$SelectTime),input$HisIV)))
+                      choices = c(input$SelectTime,input$HisIV)))
+        
+      }
+     }
+      if(input$SelectTime ==F){
+        if(input$SelectGeno==T){
+          tagList(
+            selectInput("Plotfacet_choice", "Independent Variable to split the plots",
+                        #choices = c(setdiff(list(input$SelectGeno, input$SelectIV),input$HisIV)))
+                        choices = c(input$SelectGeno, input$HisIV)))
+          
+        }
+        
+        if(input$SelectGeno==F){
+          tagList(
+            selectInput("Plotfacet_choice", "Independent Variable to split the plots",
+                        #choices = c(input$SelectIV,input$HisIV)))
+                        choices = c(input$HisIV)))
+        }
+      }
     }
     else{
       return()
     }
-  })
+    })
+ 
   
   
   
