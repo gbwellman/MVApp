@@ -3027,7 +3027,15 @@ function(input, output) {
     temp <- subset(temp, select=c(input$SelectGeno, input$SelectIV, input$SelectTime, input$SelectID, input$PCA_pheno))
     
   if(input$PCA_data_subset == "subsetted dataset"){
-    subset_lista <- input$PCA_subset_T}
+    
+    subset_lista <- input$PCA_subset_T
+    id_lista <- c(input$SelectGeno, input$SelectIV, input$SelectTime)
+    id_lista2 <- setdiff(id_lista, subset_lista)
+    temp$subset_id <- do.call(paste,c(temp[c(subset_lista)], sep="_"))
+    temp3 <- subset(temp, temp$subset_id == input$PCA_subset_S)
+    temp3$id <- do.call(paste,c(temp3[c(id_lista2, subset_lista)], sep="_"))
+    temp2 <- subset(temp3, select = c("id", input$PCA_pheno))
+    }
   if(input$PCA_data_subset == "full dataset"){{
       temp$id <- do.call(paste,c(temp[c(input$SelectGeno, input$SelectIV, input$SelectTime, input$SelectID)], sep="_"))
       temp2 <- subset(temp, select = c("id", input$PCA_pheno))
@@ -3057,7 +3065,8 @@ function(input, output) {
           xlab = "Principal Components",
           ylab = "Percentage of variances",
           col ="steelblue")
-  lines(x = 1:nrow(eigenvalues), eigenvalues[, 2], 
+    
+    lines(x = 1:nrow(eigenvalues), eigenvalues[, 2], 
           type="b", pch=19, col = "red")
   })
   
@@ -3219,18 +3228,25 @@ function(input, output) {
     temp <- subset(temp, select=c(input$SelectGeno, input$SelectIV, input$SelectTime, input$SelectID, input$PCA_pheno))
     
     if(input$PCA_data_subset == "subsetted dataset"){
-      subset_lista <- input$PCA_subset_T}
+      
+      subset_lista <- input$PCA_subset_T
+      id_lista <- c(input$SelectGeno, input$SelectIV, input$SelectTime)
+      id_lista2 <- setdiff(id_lista, subset_lista)
+      temp$subset_id <- do.call(paste,c(temp[c(subset_lista)], sep="_"))
+      temp2 <- subset(temp, temp$subset_id == input$PCA_subset_S)
+      temp2$id <- do.call(paste,c(temp2[c(id_lista2, subset_lista)], sep="_"))
+    }
     if(input$PCA_data_subset == "full dataset"){{
         temp$id <- do.call(paste,c(temp[c(input$SelectGeno, input$SelectIV, input$SelectTime, input$SelectID)], sep="_"))
         temp2 <- temp
       }}
     
     ##### END REFERENCE DATA HERE ######   
-    temp3 <- subset(temp2, select = c(input$SelectGeno, input$SelectIV, input$SelectTime, input$SelectID))
+    temp4 <- subset(temp2, select = c(input$SelectGeno, input$SelectIV, input$SelectTime, input$SelectID))
     
     temporary <- res.pca$ind$coord
     
-    la_table <- cbind(temp3, temporary)
+    la_table <- cbind(temp4, temporary)
     names(la_table) <- gsub("Dim.", "", names(la_table), fixed=T)
     la_table
   })
