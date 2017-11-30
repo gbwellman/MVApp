@@ -435,6 +435,39 @@ tabPanel("Hierarchical Clustering",
                                column(4, uiOutput("Select_data_cluster_validation")))
            ))
          # end of Tab #8
+), 
+
+# Tab 9 = = = = = = = = = = = = = = >> K-MEANS CLUSTERING ANALYSIS << = = = = = = = = = = = = = = = = = = 
+
+tabPanel("K-means Clustering", icon = icon("barcode"),
+         sidebarPanel(
+           uiOutput("Select_data_K_mean_cluster"),
+           uiOutput("Select_DV_KMC"),
+           actionButton(inputId= "Select_data_KMC", label = "Set the dataset"),
+           checkboxInput(inputId = "KMCluster_scale_Q", label = "Scale the data prior to clustering"),
+           uiOutput("Select_best_cluster_number_advice_method"),
+           actionButton(inputId="Go_KMClustering_advise", label = "Unleash optimal cluster number estimation"),
+           hr(),
+           uiOutput("Select_numer_of_cluster_to_perform"),
+           actionButton(inputId="Go_KMClustering", label = "Unleash k-means clustering")
+         ),
+         
+         mainPanel(
+           navbarPage("KMC",
+                      tabPanel("Advise on cluster number",
+                               dataTableOutput("KMCluster_test"),
+                               plotOutput("elbow_graph_KMC")
+                               # all three plots with prediction of best clusters
+                               # + 30 indices results (report & graph)
+                               ),
+                      tabPanel("K means clustering results",
+                               dataTableOutput("KMC_test2")
+                               # Plots of samples coloured by cluster number
+                               # Table with samples coded with cluster number - to download
+                               )
+         ))
+ 
+      # end of Tab #9           
 )
 # end of App - final brackets
   )

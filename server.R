@@ -4066,6 +4066,87 @@ function(input, output) {
       
       write.csv(Cluster_table_data(), file)}
   )
+ 
+  # = = = = = = = = = = = = = = >>> K MEANS CLUSTERING <<< =  = = = = = = = = = = = = = = = = #
+  
+  # input gadgets:
+  
+  output$Select_data_K_mean_cluster <- renderUI({
+    if(is.null(ItemList())){return()}
+    else
+      tagList(
+        selectizeInput(
+          inputId = "KMCluster_data",
+          label = "Dataset for clustering analysis",
+          choices = c("raw data", "missing values removed", "outliers removed"), multiple = F))
+  })
+  
+  output$Select_DV_KMC <- renderUI({
+    if(is.null(ItemList())){return()}
+    else
+      tagList(
+        selectizeInput(
+          inputId = "KMC_pheno",
+          label = "Phenotypes for the clustering analysis",
+          choices = c(input$SelectDV),
+          multiple = T
+        ))
+  })
+  
+  
+ KMC_data_type <- eventReactive(input$Select_data_KMC,{
+    if(input$KMCluster_data == "raw data"){
+      KMC_data_type <- my_data()
+    }
+    if(input$KMCluster_data == "missing values removed"){
+      KMC_data_type <- my_data_nona()
+    }
+    if(input$KMCluster_data == "outliers removed"){
+      KMC_data_type <- Outlier_free_data()
+    }
+   final_set <- subset(KMC_data_type, select=c(input$SelectGeno, input$SelectIV, input$SelectTime, input$SelectID, input$KMC_pheno))
+     final_set                  
+  })
+ 
+ KMC_data_for_matrix <- eventReactive(input$Select_data_KMC, {
+   object <- KMC_data_type()
+   
+   beginCol <-
+     length(c(
+       input$SelectIV,
+       input$SelectGeno,
+       input$SelectTime,
+       input$SelectID
+     )) + 1
+   
+   endCol <- ncol(object)
+   
+   for_matrix <- object[,(beginCol:endCol)]
+   for_matrix <- na.omit(for_matrix) 
+   
+   if(input$KMCluster_scale_Q == T){
+   for_matrix <- scale(for_matrix) 
+   }
+   
+   for_matrix
+ })
+
+  
+ # = = = = == = = = = >> MAIN CALCULATIONS / DATA OUTPUT << = = =  
+  output$KMCluster_test <- renderDataTable({
+    KMC_data_for_matrix()
+  })
+     
+  
+  output$elbow_graph_KMC <- renderPlot({
+    mydata <- KMC_data_for_matrix()
+    wss <- (nrow(mydata)-1)*sum(apply(mydata,2,var))
+    for (i in 2:15) wss[i] <- sum(kmeans(mydata, 
+                                         centers=i)$withinss)
+    plot(1:15, wss, type="b", xlab="Number of Clusters",
+         ylab="Within groups sum of squares")
+  })
     
+   
   # end of the script
 }
