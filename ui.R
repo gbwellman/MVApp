@@ -364,7 +364,7 @@ tabPanel("Correlations",
 ),
 # Tab 7 = = = = = = = = = = = = = = >> PCA ANALYSIS << = = = = = = = = = = = = = = = = = = 
 
-tabPanel("reduction of dimentionality", icon = icon("object-group"),
+tabPanel("Reduction in dimentionality", icon = icon("object-group"),
 navbarPage("",
   tabPanel("PCA",
   sidebarPanel(
@@ -406,8 +406,41 @@ navbarPage("",
                         dataTableOutput("PCA_contribution_var"))
     ))),
   tabPanel("Multidimensional Scaling",
-           sidebarPanel("some gadgets"),
-           mainPanel("some graphs")
+           sidebarPanel(
+             
+             fluidRow(
+               uiOutput("MDS_Pheno_data"), #
+               actionButton("Go_MDSdata", label = "Set the data for MDS"),
+               uiOutput("MDS_Select_pheno"), #
+               selectizeInput("MDS_subset_Q", label = "Perform MDS on:", choices=c("Full dataset", "Subsetted dataset")),
+               uiOutput("MDS_subset_trait"),
+               uiOutput("MDS_subset_specific"),
+               
+               selectizeInput("MDS_metric_non_metric_Q", label = "Perform MDS using:", choices = c("metric method", "non-metric method")),
+               
+               actionButton("Go_MDS", label = "Unleash the power of Multidimensional Scaling"),
+             
+             br(),
+             checkboxInput("MDS_KMC_Q", label = "Cluster the samples using k-means"),
+             uiOutput("MDS_KMC_number"))),
+           
+           mainPanel(
+             navbarPage("MDS",
+                        tabPanel("Selected dataset",
+                                 dataTableOutput("MDS_raw_table")),
+                        tabPanel("Final dataset for MDS",
+                                 dataTableOutput("MDS_final_table")),
+                        tabPanel("MDS of the samples",
+                                 plotlyOutput("MDS_sample_graph"),
+                                 "Download button",
+                                 dataTableOutput("MDS_table_output")),
+                        tabPanel("Scaling of the Dependent Variables",
+                                 "Plotly graph Dim1 vs Dim2 with / without coloring for k-means clusters",
+                                 "Download button",
+                                 "Table with coordinates +/- k-means group depending if they chose it or not"
+                                 )
+                        ))
+             
            ))
   # end Tab 7
 ),

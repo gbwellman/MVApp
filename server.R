@@ -3441,9 +3441,11 @@ function(input, output) {
   
   
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  # - - - - - - - - - - - - - - >> PCA IN 7th TAB <<- - - - - - - - - - - - - - - -
+  # - - - - - - - - - - - - - - >> PCA + MDS IN 7th TAB <<- - - - - - - - - - - - - 
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   
+  
+  # - - - - - - - - - - - - - - >> PCA <<- - - - - - - - - - - - - 
   output$PCA_Pheno_data <- renderUI({
     if(is.null(ItemList())){return()}
     else
@@ -3789,6 +3791,189 @@ function(input, output) {
     super_plot
   })
   
+  
+  # - - - - - - - - - - - - - - >> MDS <<- - - - - - - - - - - - - 
+  
+  output$MDS_Pheno_data <- renderUI({
+    if(is.null(ItemList())){return()}
+    else
+      tagList(
+        selectizeInput(
+          inputId = "MDS_data",
+          label = "Dataset for MDS:",
+          choices = c("raw data", "missing values removed", "outliers removed"), multiple = F))
+  }) 
+  
+  MDS_data_type <- eventReactive(input$Go_MDSdata,{
+    if(input$MDS_data == "raw data"){
+      MDS_data_type <- my_data()
+    }
+    if(input$MDS_data == "missing values removed"){
+      MDS_data_type <- my_data_nona()
+    }
+    if(input$MDS_data == "outliers removed"){
+      MDS_data_type <- Outlier_free_data()
+    }
+    MDS_data_type
+  })
+  
+  output$MDS_raw_table <- renderDataTable({
+    MDS_data_type()
+  })
+  
+  output$MDS_Select_pheno <- renderUI({
+    if(is.null(ItemList())){return()}
+  else
+      tagList(
+        selectizeInput(
+          inputId = "MDS_pheno",
+          label = "Dependent Variables for the MDS",
+          choices = c(input$SelectDV),
+          multiple = T
+        ))
+  })
+  
+  output$MDS_subset_trait <- renderUI({
+    if(input$MDS_subset_Q == "Full dataset"){
+      return()
+    }
+    else{
+      tagList(
+        selectizeInput(
+          inputId = "MDS_subset_T",
+          label = "Independent Variables to subset the data",
+          choices=c(input$SelectGeno, input$SelectIV, input$SelectTime),
+          multiple=T
+        ))}
+  })
+  
+  lista_MDS <- eventReactive(input$MDS_subset_T,{
+    subset_lista <- input$MDS_subset_T
+    id_lista <- c(input$SelectGeno, input$SelectIV, input$SelectTime)
+    id_lista2 <- setdiff(id_lista, subset_lista)
+    temp <- MDS_data_type()
+    temp$subset_id <- do.call(paste,c(temp[c(subset_lista)], sep="_"))
+    the_list <- unique(temp$subset_id)
+    the_list
+  })
+  
+  output$MDS_subset_specific <- renderUI({
+    if(is.null(input$MDS_subset_T)){
+      return()
+    }
+    else{
+      subset_lista <- input$MDS_subset_T
+      id_lista <- c(input$SelectGeno, input$SelectIV, input$SelectTime)
+      id_lista2 <- setdiff(id_lista, subset_lista)
+      temp <- MDS_data_type()
+      temp$subset_id <- do.call(paste,c(temp[c(subset_lista)], sep="_"))
+      the_list <- unique(temp$subset_id)
+      
+      tagList(
+        selectizeInput(
+          inputId = "MDS_subset_S",
+          label = "Select subset:",
+          choices=c(the_list),
+          multiple=F
+        ))}
+  })
+  
+  output$MDS_KMC_number <- renderUI({
+    if(input$MDS_KMC_Q == F){
+      return()
+    }
+    else(
+      textInput(
+        inputId = "MDS_cluster_number",
+        label = "Number of k-mean clusters (numeric only!):"
+      )
+    )
+  })
+
+  MDS_final_data <- eventReactive(input$Go_MDS,{
+    temp <- data.frame(MDS_data_type())
+    temp <- subset(temp, select=c(input$SelectGeno, input$SelectIV, input$SelectTime, input$SelectID, input$MDS_pheno))
+    
+    if(input$MDS_subset_Q == "Subsetted dataset"){
+      
+      subset_lista <- input$MDS_subset_T
+      id_lista <- c(input$SelectGeno, input$SelectIV, input$SelectTime)
+      id_lista2 <- setdiff(id_lista, subset_lista)
+      temp$subset_id <- do.call(paste,c(temp[c(subset_lista)], sep="_"))
+      temp3 <- subset(temp, temp$subset_id == input$MDS_subset_S)
+      temp3$id <- do.call(paste,c(temp3[c(id_lista2, subset_lista)], sep="_"))
+      temp2 <- subset(temp3, select = c("id", input$MDS_pheno))
+    }
+    if(input$MDS_subset_Q == "Full dataset"){{
+      temp$id <- do.call(paste,c(temp[c(input$SelectGeno, input$SelectIV, input$SelectTime, input$SelectID)], sep="_"))
+      temp2 <- subset(temp, select = c("id", input$MDS_pheno))
+    }}
+    
+    return(temp2)
+  })
+  
+  output$MDS_final_table <- renderDataTable({
+    MDS_final_data()
+  })
+  
+  MDS_Calculations <- eventReactive(input$Go_MDS,{
+    data <- MDS_final_data()
+    data2 <- data[,2:ncol(data)]
+    data2m <- as.matrix(data2)
+    row.names(data2m) <- data$id
+    
+    if(input$MDS_metric_non_metric_Q == "metric method"){
+      
+      mds <- data2m %>%
+        dist() %>%          
+        cmdscale() %>%
+        as_tibble()
+      colnames(mds) <- c("Dim.1", "Dim.2")
+      
+      if(input$MDS_KMC_Q == T){
+        clust_number <- as.numeric(as.character(input$MDS_cluster_number))
+        clust <- kmeans(mds, clust_number)$cluster %>%
+          as.factor()
+        mds <- mds %>%
+          mutate(groups = clust)
+      }
+    }
+    
+    if(input$MDS_metric_non_metric_Q == "non-metric method"){
+    # for later  
+    }
+    
+    data$Dim1 <- mds$Dim.1
+    data$Dim2 <- mds$Dim.2
+    if(input$MDS_KMC_Q == T){
+      data$K_cluster <- mds$groups
+    }
+    
+    data
+  })
+  
+  output$MDS_sample_graph <- renderPlotly({
+    data <- MDS_Calculations()
+    
+    if(input$MDS_KMC_Q == T){
+    super_plot <- ggplot(data = data, aes(x = Dim1, y= Dim2, colour = K_cluster))
+    }
+    
+    else{
+    super_plot <- ggplot(data = data, aes(x = Dim1, y= Dim2))
+    }
+    
+    super_plot <- super_plot + geom_point()
+    super_plot <- super_plot + xlab("Dimension 1")
+    super_plot <- super_plot + ylab("Dimension 2")
+    super_plot
+    
+  })
+  
+
+  output$MDS_table_output  <- renderDataTable({
+    MDS_Calculations()
+  })
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # - - - - - - - - - - - - >> CLUSTER ANALYSIS IN 8th TAB << - - - - - - - - - - -
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -4253,6 +4438,9 @@ function(input, output) {
       
       write.csv(Cluster_table_data(), file)}
   )
-    
+ 
+  
+  
+     
   # end of the script
 }
