@@ -448,7 +448,31 @@ tabPanel("Clustering", icon = icon("sitemap"),
            ))),
       tabPanel("K-means clustering"))
          # end of Tab #8
-)
+),
+
+##############TAB Heritability###
+tabPanel("Heritability", icon=icon("binoculars"),
+         
+                    sidebarPanel("",
+                               fluidRow(
+                                 uiOutput("Herit_Pheno_data"),
+                                 uiOutput("YearID"),
+                                 uiOutput("LocationID"),
+                                 textInput("RepID", label="Type in the number of replications per location per year"),
+                                 uiOutput("HeritDV"),
+                                 checkboxInput("herit_facet", "Would you like to subset the data?"),
+                                 uiOutput("Heritfacets")
+                                 
+                               )),
+                             mainPanel(
+                               navbarPage("",
+                                          tabPanel("Calculating heritability", icon=icon("area-chart"),
+                                                   verbatimTextOutput("The model you used to calculate the borad-sense heritability is"),
+                                                   br(),
+                                                   uiOutput("HeritValue")
+
+                              )))
+        )                                                   
 # end of App - final brackets
   )
 )

@@ -4312,5 +4312,197 @@ function(input, output) {
       write.csv(Cluster_table_data(), file)}
   )
     
+###############Heritability
+  ##select dataset
+  output$Herit_Pheno_data <- renderUI({
+    if(is.null(ItemList())){return()}
+    else
+      tagList(
+        selectizeInput(
+          inputId = "Herit_data",
+          label = "Dataset used to calculate heritability:",
+          choices = c("raw data", "missing values removed", "outliers removed"), multiple = F))
+  })  
+  
+  Herit_data_type <- eventReactive(exists(input$Herit_data),{
+    if(input$Herit_data == "raw data"){
+      Herit_data_type <- my_data()
+    }
+    if(input$Herit_data == "missing values removed"){
+      Herit_data_type <- my_data_nona()
+    }
+    if(input$Herit_data == "outliers removed"){
+      Herit_data_type <- Outlier_free_data()
+    }
+    Herit_data_type
+  })
+  
+  #### Choosing model terms 
+  
+  output$YearID <- renderUI({
+    if (is.null(ItemList())){
+      return ()
+    } else
+      tagList(
+        selectizeInput(
+          inputId = "SelectYear",
+          label = "Select column containing year",
+          choices = c("none", setdiff(ItemList(), input$SelectGeno)),
+          multiple = F
+        )
+      )
+  })
+  
+  
+  output$LocationID <- renderUI({
+    if (is.null(ItemList())){
+      return ()
+    } else
+      tagList(
+        selectizeInput(
+          inputId = "SelectLocation",
+          label = "Select column containing location",
+          choices = c("none", setdiff(ItemList(), input$SelectGeno)),
+          multiple = F
+        )
+      )
+  })
+  
+  
+  output$HeritDV <- renderUI({
+    if ((input$Go_Data == FALSE)) {
+      return ()
+    } else
+      tagList(
+        selectizeInput(
+          inputId = "HeritDV",
+          label = "Phenotype to calculate the broad-sense heritability for",
+          choices = input$SelectDV,
+          multiple = F
+        )
+      )
+  })
+  
+
+  output$Heritfacets <- renderUI({
+    if(is.null(ItemList())){
+      return()
+    }
+    if(input$herit_facet == T){
+      tagList(
+        selectInput("Heritfacet_choice", "Independent Variable to subset the data",
+                    choices = c(
+                      input$SelectIV,
+                      #input$SelectGeno,
+                      input$SelectTime,
+                      input$SelectID,
+                      setdiff(input$SelectYear, "none"),
+                      setdiff(input$SelectLocation, "none")
+                    )
+        ))
+    }
+    else{
+      return()
+    }
+  })
+  
+  output$HeritValue<-renderPrint({
+    heritdata<-Herit_data_type()[,c(input$HeritDV,input$SelectGeno,input$Heritfacet_choice, input$SelectYear, input$SelectLocation)]
+    Accession<-input$SelectGeno 
+    Yearherit<-input$SelectYear
+    Yearnum<-length(unique(input$SelectYear))
+    Locationherit<-input$SelectLocation
+    Locationnum<-length(unique(input$SelectLocation))
+    
+    if(input$herit_facet == T){
+    for(i in unique(input$herit_facet)){
+     heritdata_sub<- subset(heridata, input$herit_facet==i)
+       
+       if(input$SelectLocation=="none"){
+         heritfit<- lmer(HeritDV~ 1 + (1 | Accession ) + (1 | Yearherit) + (1| Accession:Yearherit), data=heritdata_sub) 
+         heritvar<-VarCorr(heritfit) 
+         heritvar1<-as.data.frame(heritvar)
+         heritvariance<- heritvar1$vcov
+         heritability<-(heritvariance[2]/ (heritvariance[2] + (heritvariance[1]/Yearnum) + (heritvariance[4]/(Yearnum*RepID))))*100
+       }
+    
+       if(input$SelectYear=="none"){
+         heritfit<- lmer(HeritDV~ 1 + (1 | Accession ) + (1 | Locationherit) + (1| Accession:Locationherit), data=heritdata_sub) 
+         heritvar<-VarCorr(heritfit) 
+         heritvar1<-as.data.frame(heritvar)
+         heritvariance<- heritvar1$vcov
+         heritability<-(heritvariance[2]/ (heritvariance[2] + (heritvariance[1]/Locationnum) + (heritvariance[4]/(Locationnum*RepID))))*100
+       }
+    
+       if(input$SelectYear=="none" && input$SelectLocation=="none"){
+         heritfit<- lmer(HeritDV~ 1 + (1 | Accession ), data=heritdata_sub) 
+         heritvar<-VarCorr(heritfit) 
+         heritvar1<-as.data.frame(heritvar)
+         heritvariance<- heritvar1$vcov
+         heritability<-(heritvariance[1]/ (heritvariance[1] + (heritvariance[2]/(Locationnum*RepID))))*100
+         
+       }
+    else{
+      
+      heritfit<- lmer(HeritDV~ 1 + (1 | Accession) + (1 | Yearherit) + (1 | Locationherit) + (1 | Accession:Locationherit) + (1| Accession:Yearherit) + (1 | Accession:Yearherit:Locationherit), data=heritdata_sub)
+      heritvar<-VarCorr(heritfit) 
+      heritvar1<-as.data.frame(heritvar)
+      heritvariance<- heritvar1$vcov
+      heritability<-(heritvariance[4]/ (heritvariance[4] + (heritvariance[2]/(Yearnum))+ (heritvariance[3]/(Locationnum)) + (heritvariance[7]/(Yearnum*Locationnum*RepID))))*100
+    }
+       print(i)
+       print(heritfit@call)
+       print(heritability)
+     }}
+    
+    if(input$herit_facet == F){
+      if(input$SelectLocation=="none"){
+        heritfit<- lmer(HeritDV~ 1 + (1 | Accession ) + (1 | Yearherit) + (1| Accession:Yearherit), data=heritdata) 
+        heritvar<-VarCorr(heritfit) 
+        heritvar1<-as.data.frame(heritvar)
+        heritvariance<- heritvar1$vcov
+        heritability<-(heritvariance[2]/ (heritvariance[2] + (heritvariance[1]/Yearnum) + (heritvariance[4]/(Yearnum*RepID))))*100
+        print(HeritDV)
+        print(heritfit@call)
+        print(heritability)
+      }
+      
+      if(input$SelectYear=="none"){
+        heritfit<- lmer(HeritDV~ 1 + (1 | Accession ) + (1 | Locationherit) + (1| Accession:Locationherit), data=heritdata) 
+        heritvar<-VarCorr(heritfit) 
+        heritvar1<-as.data.frame(heritvar)
+        heritvariance<- heritvar1$vcov
+        heritability<-(heritvariance[2]/ (heritvariance[2] + (heritvariance[1]/Locationnum) + (heritvariance[4]/(Locationnum*RepID))))*100
+        print(HeritDV)
+        print(heritfit@call)
+        print(heritability)
+      }
+      
+      if(input$SelectYear=="none" && input$SelectLocation=="none"){
+        heritfit<- lmer(HeritDV~ 1 + (1 | Accession ), data=heritdata) 
+        heritvar<-VarCorr(heritfit) 
+        heritvar1<-as.data.frame(heritvar)
+        heritvariance<- heritvar1$vcov
+        heritability<-(heritvariance[1]/ (heritvariance[1] + (heritvariance[2]/(Locationnum*RepID))))*100
+        print(HeritDV)
+        print(heritfit@call)
+        print(heritability)
+      }
+      
+      else{
+        heritfit<- lmer(HeritDV~ 1 + (1 | Accession) + (1 | Yearherit) + (1 | Locationherit) + (1 | Accession:Locationherit) + (1| Accession:Yearherit) + (1 | Accession:Yearherit:Locationherit), data=heritdata)
+        heritvar<-VarCorr(heritfit) 
+        heritvar1<-as.data.frame(heritvar)
+        heritvariance<- heritvar1$vcov
+        heritability<-(heritvariance[4]/ (heritvariance[4] + (heritvariance[2]/(Yearnum))+ (heritvariance[3]/(Locationnum)) + (heritvariance[7]/(Yearnum*Locationnum*RepID))))*100
+      }
+      print(HeritDV)
+      print(heritfit@call)
+      print(heritability)
+    }
+  })
+  
+##end of heritability tab   
+
   # end of the script
 }
