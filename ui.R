@@ -443,31 +443,59 @@ tabPanel("K-means Clustering", icon = icon("barcode"),
          sidebarPanel(
            uiOutput("Select_data_K_mean_cluster"),
            uiOutput("Select_DV_KMC"),
-           actionButton(inputId= "Select_data_KMC", label = "Set the dataset"),
            checkboxInput(inputId = "KMCluster_scale_Q", label = "Scale the data prior to clustering"),
+           checkboxInput("KMC_use_means", label = "Perform K-means cluster analysis on mean values?"),
+           actionButton(inputId= "Select_data_table", label = "Show data table"),
+           actionButton(inputId= "Select_data_KMC", label = "Set the dataset"),
            uiOutput("Select_best_cluster_number_advice_method"),
            actionButton(inputId="Go_KMClustering_advise", label = "Unleash optimal cluster number estimation"),
            hr(),
            uiOutput("Select_numer_of_cluster_to_perform"),
+           numericInput("kmclusters", "Cluster number", 3,
+                        min = 1, max = 9),
            actionButton(inputId="Go_KMClustering", label = "Unleash k-means clustering")
          ),
          
          mainPanel(
            navbarPage("KMC",
-                      tabPanel("Advise on cluster number",
+                      tabPanel("Optimal number of clusters",
+                               dataTableOutput("KMC_data_table"),
                                dataTableOutput("KMCluster_test"),
-                               plotOutput("elbow_graph_KMC")
+                               column(6, plotOutput("elbow_graph_KMC")),
+                               column(6, plotOutput("silhouette_graph_KMC")),
+                               #plotOutput("gapstat_graph_KMC"),
+                               column(12,plotOutput("indices_plots_KMC_1")),
+                               column(12, plotOutput("indices_plots_KMC_2")),
+                               column(12, verbatimTextOutput("indices_majority_KMC")),
+                               plotOutput("indices_plots_KMC_3")
                                # all three plots with prediction of best clusters
                                # + 30 indices results (report & graph)
                                ),
                       tabPanel("K means clustering results",
-                               dataTableOutput("KMC_test2")
+                               dataTableOutput("KMC_test"),
+                               #dataTableOutput("KMC_test1"),
+                               uiOutput("Select_KMC_trait"),
+                               uiOutput("Select_KMC_facet_barplot"),
+                               uiOutput("Select_KMC_scale_barplot"),
+                               uiOutput("Select_KMC_background_barplot"),
+                               uiOutput("Select_KMC_grid_barplot"),
+                               plotlyOutput("kmeans_barplots"),
+                               hr(),
+                               column(4,uiOutput("xcol_kmeans_scatter")),
+                               column(4,uiOutput("ycol_kmeans_scatter")),
+                               uiOutput("Select_KMC_facet_to_plot"),
+                               uiOutput("Select_KMC_facet_scale"),
+                               uiOutput("Select_KMC_background_to_plot"),
+                               uiOutput("Select_KMC_grid_to_plot"),
+                               #dataTableOutput("KMC_test2"),
+                               column(12,plotlyOutput("kmeans_scatter_plot"))
                                # Plots of samples coloured by cluster number
                                # Table with samples coded with cluster number - to download
                                )
          ))
  
-      # end of Tab #9           
+      
+           # end of Tab #9           
 )
 # end of App - final brackets
   )
