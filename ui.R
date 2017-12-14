@@ -459,7 +459,7 @@ tabPanel("Heritability", icon=icon("binoculars"),
                                  uiOutput("YearID"),
                                  uiOutput("LocationID"),
                                  textInput("RepID", label="Type in the number of replications per location per year"),
-                                 uiOutput("HeritDV"),
+                                 uiOutput("HeritabilityDV"),
                                  checkboxInput("herit_facet", "Would you like to subset the data?"),
                                  uiOutput("Heritfacets")
                                  
@@ -467,9 +467,11 @@ tabPanel("Heritability", icon=icon("binoculars"),
                              mainPanel(
                                navbarPage("",
                                           tabPanel("Calculating heritability", icon=icon("area-chart"),
-                                                   verbatimTextOutput("The model you used to calculate the borad-sense heritability is"),
-                                                   br(),
-                                                   uiOutput("HeritValue")
+                                                   #verbatimTextOutput("The model you used to calculate the borad-sense heritability is"),
+                                                   #br(),
+                                                   #uiOutput("HeritValue")
+                                                   dataTableOutput("Heri_table"),
+                                                   verbatimTextOutput("HeritValue")
 
                               )))
         )                                                   
