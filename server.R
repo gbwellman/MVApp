@@ -4431,7 +4431,8 @@ function(input, output) {
     cat("\n")
     if(input$herit_facet == F){
     if(input$SelectYear != "none" & input$SelectLocation != "none")  { 
-      heritdata <- subset(heritdata2, select = c(input$HeritabDV,input$SelectGeno,input$Heritfacet_choice, input$SelectYear, input$SelectLocation))
+      heritdata_na <- subset(heritdata2, select = c(input$HeritabDV,input$SelectGeno,input$Heritfacet_choice, input$SelectYear, input$SelectLocation))
+      heritdata<-na.omit(heritdata_na)
       Year<-heritdata[,input$SelectYear]
       uniYear<-unique(Year)
       cat("Unique year values are:") 
@@ -4452,7 +4453,6 @@ function(input, output) {
       
       Accession <- heritdata[,input$SelectGeno]
       HeritDV <-heritdata[,input$HeritabDV]
-     
       heritfit<- lmer(HeritDV~ 1 + (1 | Accession) + (1 | Year) + (1 | Location) + (1 | Accession:Location) + (1| Accession:Year) + (1 | Accession:Year:Location), data=heritdata)
       heritvar<-VarCorr(heritfit) 
       heritvar1<-as.data.frame(heritvar)
@@ -4462,7 +4462,8 @@ function(input, output) {
     }  
     
     if(input$SelectYear != "none" & input$SelectLocation == "none")  { 
-      heritdata <- subset(heritdata2, select = c(input$HeritabDV,input$SelectGeno,input$Heritfacet_choice, input$SelectYear))
+      heritdata_na <- subset(heritdata2, select = c(input$HeritabDV,input$SelectGeno,input$Heritfacet_choice, input$SelectYear))
+      heritdata<-na.omit(heritdata_na)
       Year<-heritdata[,input$SelectYear]
       uniYear<-unique(Year)
       cat("Unique year values are:") 
@@ -4483,7 +4484,8 @@ function(input, output) {
     }  
     
     if(input$SelectLocation != "none" & input$SelectYear == "none"){
-      heritdata <- subset(heritdata2, select = c(input$HeritabDV,input$SelectGeno,input$Heritfacet_choice, input$SelectLocation))
+      heritdata_na <- subset(heritdata2, select = c(input$HeritabDV,input$SelectGeno,input$Heritfacet_choice, input$SelectLocation))
+      heritdata<-na.omit(heritdata_na)
       Location<-heritdata[,input$SelectLocation]
       uniLocation<-unique(Location)
       cat("Unique location values are:") 
@@ -4505,7 +4507,8 @@ function(input, output) {
       
     
     if(input$SelectLocation == "none" & input$SelectYear == "none")  {
-      heritdata <- subset(heritdata2, select = c(input$HeritabDV,input$SelectGeno,input$Heritfacet_choice))
+      heritdata_na <- subset(heritdata2, select = c(input$HeritabDV,input$SelectGeno,input$Heritfacet_choice))
+      heritdata<-na.omit(heritdata_na)
       Accession <- heritdata[,input$SelectGeno]
       HeritDV <-heritdata[,input$HeritabDV]
       heritfit<- lmer(HeritDV ~ 1 + (1 | Accession ), data=heritdata) 
@@ -4527,7 +4530,8 @@ function(input, output) {
     
     if(input$herit_facet == T){
       if(input$SelectYear != "none" & input$SelectLocation != "none")  { 
-        heritdata <- subset(heritdata2, select = c(input$HeritabDV,input$SelectGeno,input$Heritfacet_choice, input$SelectYear, input$SelectLocation))
+        heritdata_na <- subset(heritdata2, select = c(input$HeritabDV,input$SelectGeno,input$Heritfacet_choice, input$SelectYear, input$SelectLocation))
+        heritdata<-na.omit(heritdata_na)
         heritdata$facet_herit<-heritdata[,input$Heritfacet_choice]
         
         for (i in unique (heritdata$facet_herit)){
@@ -4576,7 +4580,8 @@ function(input, output) {
       }
       
       if(input$SelectYear != "none" & input$SelectLocation == "none")  { 
-        heritdata <- subset(heritdata2, select = c(input$HeritabDV,input$SelectGeno,input$Heritfacet_choice, input$SelectYear))
+        heritdata_na <- subset(heritdata2, select = c(input$HeritabDV,input$SelectGeno,input$Heritfacet_choice, input$SelectYear))
+        heritdata<-na.omit(heritdata_na)
         heritdata$facet_herit<-heritdata[,input$Heritfacet_choice]
         
         for (i in unique (heritdata$facet_herit)){
@@ -4615,7 +4620,8 @@ function(input, output) {
       }
      
       if(input$SelectLocation != "none" & input$SelectYear == "none"){
-        heritdata <- subset(heritdata2, select = c(input$HeritabDV,input$SelectGeno,input$Heritfacet_choice, input$SelectLocation))
+        heritdata_na <- subset(heritdata2, select = c(input$HeritabDV,input$SelectGeno,input$Heritfacet_choice, input$SelectLocation))
+        heritdata<-na.omit(heritdata_na)
         heritdata$facet_herit<-heritdata[,input$Heritfacet_choice]
         for (i in unique (heritdata$facet_herit)){
           heritdatasub<-subset(heritdata, facet_herit==i) 
@@ -4655,7 +4661,8 @@ function(input, output) {
       }
       
       if(input$SelectLocation == "none" & input$SelectYear == "none")  {
-        heritdata <- subset(heritdata2, select = c(input$HeritabDV,input$SelectGeno,input$Heritfacet_choice))
+        heritdata_na <- subset(heritdata2, select = c(input$HeritabDV,input$SelectGeno,input$Heritfacet_choice))
+        heritdata<-na.omit(heritdata_na)
         heritdata$facet_herit<-heritdata[,input$Heritfacet_choice]
         
         for (i in unique (heritdata$facet_herit)){
