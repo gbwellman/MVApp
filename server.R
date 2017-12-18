@@ -4616,6 +4616,7 @@ function(input, output) {
      
       if(input$SelectLocation != "none" & input$SelectYear == "none"){
         heritdata <- subset(heritdata2, select = c(input$HeritabDV,input$SelectGeno,input$Heritfacet_choice, input$SelectLocation))
+        heritdata$facet_herit<-heritdata[,input$Heritfacet_choice]
         for (i in unique (heritdata$facet_herit)){
           heritdatasub<-subset(heritdata, facet_herit==i) 
           Location<-heritdatasub[,input$SelectLocation]
@@ -4625,11 +4626,11 @@ function(input, output) {
           Accession <- heritdatasub[,input$SelectGeno]
           HeritDV <-heritdatasub[,input$HeritabDV]
           
-          heritfit<- lmer(HeritDV~ 1 + (1 | Accession) + (1 | Year) + (1 | Location) + (1 | Accession:Location) + (1| Accession:Year) + (1 | Accession:Year:Location), data=heritdatasub)
+          heritfit<- lmer(HeritDV~ 1 + (1 | Accession ) + (1 | Location) + (1| Accession:Location), data=heritdatasub) 
           heritvar<-VarCorr(heritfit) 
           heritvar1<-as.data.frame(heritvar)
           heritvariance<- heritvar1$vcov
-          heritability<-(heritvariance[4]/ (heritvariance[4] + (heritvariance[2]/(Yearnum))+ (heritvariance[3]/(Locationnum)) + (heritvariance[7]/(Yearnum*Locationnum*Repnum))))*100
+          heritability<-(heritvariance[2]/ (heritvariance[2] + (heritvariance[1]/Locationnum) + (heritvariance[4]/(Locationnum*Repnum))))*100
           heritability2<- round(heritability, digits=2)
           
           cat("For ")
