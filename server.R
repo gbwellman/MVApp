@@ -3979,6 +3979,14 @@ function(input, output) {
     
   })
   
+  output$MDS_plot_download <- downloadHandler(
+    filename = function(){paste("MDS plot MVApp", "pdf" , sep=".") },
+    content = function(file) {
+      pdf(file)
+      data <- MDS_Calculations()
+      print(data)
+      dev.off()
+    })  
 
   output$MDS_table_samples  <- renderDataTable({
     MDS_Calculations()
@@ -3991,7 +3999,7 @@ function(input, output) {
       downloadButton("data_MDS", label="Download MDS data")
   })
   
-  output$coord_ind <- downloadHandler(
+  output$MDS_downl_data <- downloadHandler(
     filename = "MDS samples_MVApp.csv",
     content <- function(file) {
       write.csv(MDS_Calculations(), file)}
@@ -4040,6 +4048,26 @@ function(input, output) {
     tdatam_df
   })
   
+  ##########
+  output$MDS_table_samples  <- renderDataTable({
+    MDS_Calculations()
+  })
+  
+  output$MDS_download_samples <- renderUI({
+    if(is.null(MDS_Calculations())){
+      return()}
+    else
+      downloadButton("data_MDS", label="Download MDS data")
+  })
+  
+  output$coord_ind <- downloadHandler(
+    filename = "MDS samples_MVApp.csv",
+    content <- function(file) {
+      write.csv(MDS_Calculations(), file)}
+  )
+  
+  ############
+  
   output$MDS_sample_table_transposed <- renderDataTable({
     data <- MDS_Calculations_transposed()
     data <- data
@@ -4055,6 +4083,18 @@ function(input, output) {
     
   })
   
+  output$MDS_download_transposed <- renderUI({
+    if(is.null(MDS_Calculations_transposed())){
+      return()}
+    else
+      downloadButton("data_MDS", label="Download transposed MDS data")
+  })
+  
+  output$MDS_downl_transposed <- downloadHandler(
+    filename = "MDS samples transposed_MVApp.csv",
+    content <- function(file) {
+      write.csv(MDS_Calculations_transposed(), file)}
+  )
   
   output$MDS_sample_graph_transposed <- renderPlot({
     data <- MDS_Calculations_transposed()
@@ -4075,6 +4115,14 @@ function(input, output) {
     
   })
   
+  output$MDS_plot_download_transposed <- downloadHandler(
+    filename = function(){paste("MDS plot_transposed MVApp", "pdf" , sep=".") },
+    content = function(file) {
+      pdf(file)
+      data <- MDS_Calculations_transposed()
+      print(data)
+      dev.off()
+    })  
   
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # - - - - - - - - - - - - >> CLUSTER ANALYSIS IN 8th TAB << - - - - - - - - - - -
