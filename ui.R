@@ -432,12 +432,12 @@ navbarPage("",
                                  dataTableOutput("MDS_final_table")),
                         tabPanel("MDS of the samples",
                                  plotlyOutput("MDS_sample_graph"),
-                                 "Download button",
-                                 dataTableOutput("MDS_table_output")),
+                                 uiOutput("MDS_download_samples"),
+                                 dataTableOutput("MDS_table_samples")),
                         tabPanel("Scaling of the Dependent Variables",
-                                 "Plotly graph Dim1 vs Dim2 with / without coloring for k-means clusters",
-                                 "Download button",
-                                 "Table with coordinates +/- k-means group depending if they chose it or not"
+                                 plotlyOutput("MDS_sample_graph_transposed")
+                                 #uiOutput("MDS_download_DV"),
+                                 #dataTableOutput("MDS_table_DV")
                                  )
                         ))
              

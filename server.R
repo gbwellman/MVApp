@@ -3480,7 +3480,7 @@ function(input, output) {
       tagList(
         selectizeInput(
           inputId = "PCA_pheno",
-          label = "Phenotypes for the PCA",
+          label = "Dependent Variables for PCA",
           choices = c(input$SelectDV),
           multiple = T
         )
@@ -3791,6 +3791,11 @@ function(input, output) {
     super_plot
   })
   
+  # - -  - - - - - - - >> Categorical PCA <<- - - - - - - - - - - - 
+  
+  
+  
+  
   
   # - - - - - - - - - - - - - - >> MDS <<- - - - - - - - - - - - - 
   
@@ -3940,8 +3945,21 @@ function(input, output) {
     }
     
     if(input$MDS_metric_non_metric_Q == "non-metric method"){
-    # for later  
-    }
+      mds <- data2m %>%
+        dist() %>%          
+        isoMDS() %>%
+        .$points %>%
+        as_tibble()
+      colnames(mds) <- c("Dim.1", "Dim.2")
+
+      if(input$MDS_KMC_Q == T){
+        clust_number <- as.numeric(as.character(input$MDS_cluster_number))
+        clust <- kmeans(mds, clust_number)$cluster %>%
+          as.factor()
+        mds <- mds %>%
+          mutate(groups = clust)
+        }
+      }
     
     data$Dim1 <- mds$Dim.1
     data$Dim2 <- mds$Dim.2
@@ -3971,9 +3989,89 @@ function(input, output) {
   })
   
 
-  output$MDS_table_output  <- renderDataTable({
+  output$MDS_table_samples  <- renderDataTable({
     MDS_Calculations()
   })
+  
+  output$MDS_download_samples <- renderUI({
+    if(is.null(MDS_Calculations())){
+      return()}
+    else
+      downloadButton("data_MDS", label="Download MDS data")
+  })
+  
+  output$coord_ind <- downloadHandler(
+    filename = "MDS samples_MVApp.csv",
+    content <- function(file) {
+      write.csv(MDS_Calculations(), file)}
+  )
+  
+  # >> Transposed MDS << 
+  
+  MDS_transposed <- eventReactive(input$Go_MDS,{
+    data <- MDS_final_data()
+    datam <- as.matrix(data[,2:ncol(data)])
+    row.names(datam) <- data$id
+    tdatam <- t(datam)
+    tdatam
+  })
+  
+  
+  MDS_Calculations_transposed <- eventReactive(input$Go_MDS,{
+    data <- MDS_final_data()
+    datam <- as.matrix(data[,2:ncol(data)])
+    row.names(datam) <- data$id
+    tdatam <- t(datam)
+    
+    if(input$MDS_metric_non_metric_Q == "metric method"){
+      
+      mds <- tdatam %>%
+        dist() %>%          
+        cmdscale() %>%
+        as_tibble()
+      colnames(mds) <- c("Dim.1", "Dim.2")
+      
+      if(input$MDS_KMC_Q == T){
+        clust_number <- as.numeric(as.character(input$MDS_cluster_number))
+        clust <- kmeans(mds, clust_number)$cluster %>%
+          as.factor()
+        mds <- mds %>%
+          mutate(groups = clust)
+      }
+    }
+    
+    tdatam$Dim1 <- mds$Dim.1
+    tdatam$Dim2 <- mds$Dim.2
+    if(input$MDS_KMC_Q == T){
+      tdatam$K_cluster <- mds$groups
+    }
+    
+    tdatam
+  })
+  
+  
+  output$MDS_sample_graph_transposed <- renderPlotly({
+    data <- MDS_Calculations_transposed()
+    
+    if(input$MDS_KMC_Q == T){
+      super_plot <- ggplot(data = data, aes(x = Dim1, y= Dim2, colour = K_cluster))
+    }
+    
+    else{
+      super_plot <- ggplot(data = data, aes(x = Dim1, y= Dim2))
+    }
+    
+    super_plot <- super_plot + geom_point()
+    super_plot <- super_plot + xlab("Dimension 1")
+    super_plot <- super_plot + ylab("Dimension 2")
+    super_plot
+    
+  })
+  
+  #library(reshape)
+  #mdata <- melt(mydata, id=c("id","time"))
+  
+  
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # - - - - - - - - - - - - >> CLUSTER ANALYSIS IN 8th TAB << - - - - - - - - - - -
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -4039,7 +4137,7 @@ function(input, output) {
       tagList(
         selectizeInput(
           inputId = "Cluster_pheno", 
-          label = "Phenotypes to include in clustering analysis:",
+          label = "Dependent Variables for clustering analysis:",
           choices=c(input$SelectDV),
           multiple = T))}
   })
