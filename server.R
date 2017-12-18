@@ -3888,9 +3888,10 @@ function(input, output) {
       return()
     }
     else(
-      textInput(
+      numericInput(
         inputId = "MDS_cluster_number",
-        label = "Number of k-mean clusters (numeric only!):"
+        label = "Number of k-mean clusters:",
+        value = 3
       )
     )
   })
@@ -3914,6 +3915,15 @@ function(input, output) {
       temp2 <- subset(temp, select = c("id", input$MDS_pheno))
     }}
     
+    
+    #### CHECK 
+    if(input$MDS_Scale_Q == T){
+      temp3 <- scale(temp2[,2:ncol(temp2)])
+      temp4 <- cbind(temp2[,1], temp3)
+      temp2 <- temp4
+      #colnames(temp2)[1] <- "id"
+    }
+    
     return(temp2)
   })
   
@@ -3927,8 +3937,7 @@ function(input, output) {
     data2m <- as.matrix(data2)
     row.names(data2m) <- data$id
     
-    if(input$MDS_metric_non_metric_Q == "metric method"){
-      
+   
       mds <- data2m %>%
         dist() %>%          
         cmdscale() %>%
@@ -3941,24 +3950,6 @@ function(input, output) {
           as.factor()
         mds <- mds %>%
           mutate(groups = clust)
-      }
-    }
-    
-    if(input$MDS_metric_non_metric_Q == "non-metric method"){
-      mds <- data2m %>%
-        dist() %>%          
-        isoMDS() %>%
-        .$points %>%
-        as_tibble()
-      colnames(mds) <- c("Dim.1", "Dim.2")
-
-      if(input$MDS_KMC_Q == T){
-        clust_number <- as.numeric(as.character(input$MDS_cluster_number))
-        clust <- kmeans(mds, clust_number)$cluster %>%
-          as.factor()
-        mds <- mds %>%
-          mutate(groups = clust)
-        }
       }
     
     data$Dim1 <- mds$Dim.1
@@ -4023,8 +4014,6 @@ function(input, output) {
     row.names(datam) <- data$id
     tdatam <- t(datam)
     
-    if(input$MDS_metric_non_metric_Q == "metric method"){
-      
       mds <- tdatam %>%
         dist() %>%          
         cmdscale() %>%
@@ -4038,38 +4027,53 @@ function(input, output) {
         mds <- mds %>%
           mutate(groups = clust)
       }
-    }
     
-    tdatam$Dim1 <- mds$Dim.1
-    tdatam$Dim2 <- mds$Dim.2
+    tdatam_df <- as.data.frame(tdatam) 
+    tdatam_df$Dim1 <- mds$Dim.1
+    tdatam_df$Dim2 <- mds$Dim.2
     if(input$MDS_KMC_Q == T){
-      tdatam$K_cluster <- mds$groups
+      tdatam_df$K_cluster <- mds$groups
     }
     
-    tdatam
+    tdatam_df$id <- input$MDS_pheno
+    
+    tdatam_df
+  })
+  
+  output$MDS_sample_table_transposed <- renderDataTable({
+    data <- MDS_Calculations_transposed()
+    data <- data
+    if(input$MDS_KMC_Q == T){
+      data_sub <- subset(data, select = c(id, Dim1, Dim2, K_cluster))
+    }
+    if(input$MDS_KMC_Q == F){
+      data_sub <- subset(data, select = c(id, Dim1, Dim2))
+    }
+    colnames(data_sub)[1] <- "Dependent Variable"
+    row.names(data_sub) <- NULL
+    data_sub
+    
   })
   
   
-  output$MDS_sample_graph_transposed <- renderPlotly({
+  output$MDS_sample_graph_transposed <- renderPlot({
     data <- MDS_Calculations_transposed()
     
     if(input$MDS_KMC_Q == T){
-      super_plot <- ggplot(data = data, aes(x = Dim1, y= Dim2, colour = K_cluster))
+      super_plot <- ggplot(data = data, aes(x = Dim1, y= Dim2, colour = K_cluster, label = data$id))
     }
     
     else{
-      super_plot <- ggplot(data = data, aes(x = Dim1, y= Dim2))
+      super_plot <- ggplot(data = data, aes(x = Dim1, y= Dim2, label = data$id))
     }
     
     super_plot <- super_plot + geom_point()
+    super_plot <- super_plot + geom_text_repel()
     super_plot <- super_plot + xlab("Dimension 1")
     super_plot <- super_plot + ylab("Dimension 2")
     super_plot
     
   })
-  
-  #library(reshape)
-  #mdata <- melt(mydata, id=c("id","time"))
   
   
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

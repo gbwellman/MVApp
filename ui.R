@@ -412,17 +412,16 @@ navbarPage("",
                uiOutput("MDS_Pheno_data"), #
                actionButton("Go_MDSdata", label = "Set the data for MDS"),
                uiOutput("MDS_Select_pheno"), #
+               checkboxInput("MDS_Scale_Q", "Scale the data prior to Multidimentional Scaling"),
                selectizeInput("MDS_subset_Q", label = "Perform MDS on:", choices=c("Full dataset", "Subsetted dataset")),
                uiOutput("MDS_subset_trait"),
                uiOutput("MDS_subset_specific"),
                
-               selectizeInput("MDS_metric_non_metric_Q", label = "Perform MDS using:", choices = c("metric method", "non-metric method")),
-               
-               actionButton("Go_MDS", label = "Unleash the power of Multidimensional Scaling"),
-             
-             br(),
-             checkboxInput("MDS_KMC_Q", label = "Cluster the samples using k-means"),
-             uiOutput("MDS_KMC_number"))),
+               br(),
+                checkboxInput("MDS_KMC_Q", label = "Cluster the samples using k-means"),
+                uiOutput("MDS_KMC_number"),
+                actionButton("Go_MDS", label = "Unleash the power of Multidimensional Scaling"))),
+           
            
            mainPanel(
              navbarPage("MDS",
@@ -435,9 +434,9 @@ navbarPage("",
                                  uiOutput("MDS_download_samples"),
                                  dataTableOutput("MDS_table_samples")),
                         tabPanel("Scaling of the Dependent Variables",
-                                 plotlyOutput("MDS_sample_graph_transposed")
+                                 plotOutput("MDS_sample_graph_transposed"),
                                  #uiOutput("MDS_download_DV"),
-                                 #dataTableOutput("MDS_table_DV")
+                                 dataTableOutput("MDS_sample_table_transposed")
                                  )
                         ))
              
