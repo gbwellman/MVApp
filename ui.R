@@ -460,7 +460,7 @@ tabPanel("K-means Clustering", icon = icon("barcode"),
            navbarPage("KMC",
                       tabPanel("Optimal number of clusters",
                                dataTableOutput("KMC_data_table"),
-                               dataTableOutput("KMCluster_test"),
+                               #dataTableOutput("KMCluster_test"),
                                column(6, plotOutput("elbow_graph_KMC")),
                                column(6, plotOutput("silhouette_graph_KMC")),
                                #plotOutput("gapstat_graph_KMC"),
@@ -472,26 +472,34 @@ tabPanel("K-means Clustering", icon = icon("barcode"),
                                # + 30 indices results (report & graph)
                                ),
                       tabPanel("K means clustering results",
-                               dataTableOutput("KMC_test"),
-                               #dataTableOutput("KMC_test1"),
                                uiOutput("Select_KMC_trait"),
+                               uiOutput("facet_barplot_of_KMC"),
                                uiOutput("Select_KMC_facet_barplot"),
                                uiOutput("Select_KMC_scale_barplot"),
+                               #actionButton(inputId= "Show_table", label = "Show barplot table"),
+                               #dataTableOutput("KMC_test1"),
                                uiOutput("Select_KMC_background_barplot"),
                                uiOutput("Select_KMC_grid_barplot"),
                                plotlyOutput("kmeans_barplots"),
                                hr(),
                                column(4,uiOutput("xcol_kmeans_scatter")),
                                column(4,uiOutput("ycol_kmeans_scatter")),
+                               uiOutput("facet_scatterplot_of_KMC"),
                                uiOutput("Select_KMC_facet_to_plot"),
                                uiOutput("Select_KMC_facet_scale"),
                                uiOutput("Select_KMC_background_to_plot"),
                                uiOutput("Select_KMC_grid_to_plot"),
                                #dataTableOutput("KMC_test2"),
-                               column(12,plotlyOutput("kmeans_scatter_plot"))
-                               # Plots of samples coloured by cluster number
-                               # Table with samples coded with cluster number - to download
-                               )
+                               column(12,plotlyOutput("kmeans_scatter_plot")),
+                               dataTableOutput("KMC_test")
+                      )
+                   #   tabPanel("Cluster validation",
+                      #         verbatimTextOutput("kmcAnovaNews"),
+                               
+                            #   plotOutput("kmcANOVA"),
+                            #   hr(),
+                          #     column(4, uiOutput("Select_data_cluster_validation")))
+          
          ))
  
       

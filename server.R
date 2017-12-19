@@ -4187,9 +4187,6 @@ Optimal_cluster_number <- eventReactive(input$Go_KMClustering_advise, {
  })
  
 
-#KMClusters$cluster <- as.factor(KMClusters$cluster)
- 
-#barplot
    
  # = = = = == = = = = >> MAIN CALCULATIONS / DATA OUTPUT << = = =  
   output$KMCluster_test <- renderDataTable({
@@ -4270,7 +4267,7 @@ Optimal_cluster_number <- eventReactive(input$Go_KMClustering_advise, {
   
   })
   
-  ###  Barplots
+  ###  BARPLOTS K-MEANS CLUSTERING 
   
   KMC_data_for_barplot <- reactive({
     mydata1 <- KMC_data_type()
@@ -4312,6 +4309,7 @@ Optimal_cluster_number <- eventReactive(input$Go_KMClustering_advise, {
   })
   
   # Use the selected variable for a new data frame
+
  # barplotData <- reactive({
   #   if(input$KMC_use_means == T){
   #      df <- KMC_data_for_barplot()
@@ -4330,9 +4328,6 @@ Optimal_cluster_number <- eventReactive(input$Go_KMClustering_advise, {
 # })
   
   
- # output$KMC_test1 <- renderDataTable({
-  #  barplotData()
-#  })
   
  #output$kmeans_barplots <- renderPlotly({
   # if(is.null(barplotData())){return()}
@@ -4346,9 +4341,19 @@ Optimal_cluster_number <- eventReactive(input$Go_KMClustering_advise, {
      #p
      
  # })  
+  
  
-  output$Select_KMC_facet_barplot <- renderUI({
+  output$facet_barplot_of_KMC <- renderUI({
     if(is.null(KMClusters())){return()}
+    else
+      tagList(
+        checkboxInput(
+          inputId = "KMC_split_barplot",
+          label = "Would you like to facet/split the graph?"))
+  })
+  
+  output$Select_KMC_facet_barplot <- renderUI({
+    if(input$KMC_split_barplot == F){return()}
     else
       tagList(
         selectizeInput(
@@ -4361,7 +4366,7 @@ Optimal_cluster_number <- eventReactive(input$Go_KMClustering_advise, {
   
   
   output$Select_KMC_scale_barplot <- renderUI({
-    if(is.null(KMClusters())){return()}
+    if(input$KMC_split_barplot == F){return()}
     else
       tagList(
         selectizeInput(
@@ -4370,6 +4375,7 @@ Optimal_cluster_number <- eventReactive(input$Go_KMClustering_advise, {
           choices = c("fixed", "free"),
           selected = "fixed"
         ))
+    
   })
   
   output$Select_KMC_background_barplot <- renderUI({
@@ -4390,16 +4396,46 @@ Optimal_cluster_number <- eventReactive(input$Go_KMClustering_advise, {
           label = "Remove grid lines"))
   })
   
-
-
+  # Use the selected variable for a new data frame
+ 
+  barplotData <- reactive({
+    #eventReactive(input$Show_table,{
+    #if (input$KMC_split_barplot == T){
+   # if (input$KMC_split_barplot == T){
+    bpd<-KMC_data_for_barplot()
+      listIV<-c(input$SelectGeno, input$SelectIV, input$SelectTime)
+      facet<-input$facet_KMC_barplot
+      listNonSel<-setdiff(listIV,facet)
+      #KMC_data_type$id <- do.call(paste,c(KMC_data_type[c(input$SelectGeno, input$SelectIV, input$SelectTime)], sep="_"))
+      if(input$KMC_split_barplot == T){
+       bpd$id <- do.call(paste, c(bpd[c(listNonSel)], sep="_"))}
+      if(input$KMC_split_barplot == F){
+        bpd$id <- do.call(paste, c(bpd[c(listIV)], sep="_"))}
+      # d <- barplotData()
+       #final_set <- subset(KMC_data_type, select=c(input$SelectGeno, input$SelectIV, input$SelectTime, input$SelectID, input$SelectDV))
+      # bd <-subset(bpd,select=c("id",input$KMC_trait_to_plot,"cluster"))
+       
+     # bd <- KMC_data_for_barplot()[,c("id", input$KMC_trait_to_plot,"cluster",input$facet_KMC_barplot)]
+      bpd
+  
+  #  }
+  #  if(input$KMC_split_barplot == F) {return()}
+    })
+  
+  output$KMC_test1 <- renderDataTable({
+    barplotData()
+  })
+  
   output$kmeans_barplots <- renderPlotly({
     if(input$KMC_use_means == T){
-      df <- KMC_data_for_barplot()
+      df <- barplotData()
       df$cluster <-as.factor(df$cluster)
       #df<-d[order(-d[,input$KMC_trait_to_plot]),]
-      p <- ggplot(df, aes(x = df[,input$SelectGeno], y = df[,input$KMC_trait_to_plot], fill = cluster) )+ 
+      p <- ggplot(df, aes(x =reorder(id,-df[,input$KMC_trait_to_plot])  , y = df[,input$KMC_trait_to_plot], fill = cluster) )+ 
         geom_bar(stat="identity")+xlab(" ") +ylab(" ") +
-        theme(axis.text.x = element_text(angle = 90, hjust = 1))+ facet_wrap(~ df[,input$facet_KMC_barplot], scale = input$Select_KMC_barplot_sc)
+        theme(axis.text.x = element_text(angle = 90, hjust = 1))
+      if(input$KMC_split_barplot == T){
+      p<-p + facet_wrap(~ df[,input$facet_KMC_barplot], scale = input$Select_KMC_barplot_sc)}
       if(input$Select_KMC_background_barplot == T){
         p <- p + theme_minimal()}
       if(input$Select_KMC_grid_barplot == T){
@@ -4407,12 +4443,14 @@ Optimal_cluster_number <- eventReactive(input$Go_KMClustering_advise, {
     
     }
     if(input$KMC_use_means == F){
-      df <- KMC_data_for_barplot()
+      df <- barplotData()
       df$cluster <-as.factor(df$cluster)
-      df<-reorder(df,-df[,input$KMC_trait_to_plot])
-      p <- ggplot(df, aes(x = df[,input$SelectGeno], y = df[,input$KMC_trait_to_plot], color = cluster)) + 
+     # df<-reorder(df,-df[,input$KMC_trait_to_plot])
+      p <- ggplot(df, aes(x = reorder(id,-df[,input$KMC_trait_to_plot]), y = df[,input$KMC_trait_to_plot], color = cluster)) + 
         geom_point() +xlab(" ") +ylab(" ") +
-        theme(axis.text.x = element_text(angle = 90, hjust = 1))+ facet_wrap(~ df[,input$facet_KMC_barplot], scale = input$Select_KMC_barplot_sc)
+        theme(axis.text.x = element_text(angle = 90, hjust = 1))
+      if(input$KMC_split_barplot == T){
+        p<-p + facet_wrap(~ df[,input$facet_KMC_barplot], scale = input$Select_KMC_barplot_sc)}
       if(input$Select_KMC_background_barplot == T){
         p <- p + theme_minimal()}
       if(input$Select_KMC_grid_barplot == T){
@@ -4422,7 +4460,7 @@ Optimal_cluster_number <- eventReactive(input$Go_KMClustering_advise, {
     p
   })
   
-  ##SCATTER PLOTS
+  ##SCATTER PLOTS K-MEANS CLUSTERING 
   
  output$xcol_kmeans_scatter <- renderUI({
    if(is.null(KMClusters())){return()}
@@ -4460,14 +4498,22 @@ Optimal_cluster_number <- eventReactive(input$Go_KMClustering_advise, {
 # output$KMC_test2 <- renderDataTable({
  #  selectedData()
 # })
+ output$facet_scatterplot_of_KMC <- renderUI({
+   if(is.null(KMClusters())){return()}
+   else
+     tagList(
+       checkboxInput(
+         inputId = "KMC_split_scatterplot",
+         label = "Would you like to facet/split the scatterplot?"))
+ })
  
  output$Select_KMC_facet_to_plot <- renderUI({
-   if(is.null(KMClusters())){return()}
+   if(input$KMC_split_scatterplot == F){return()}
    else
      tagList(
        selectizeInput(
          inputId = "facet_KMC_plot",
-         label = "Split the graph by",
+         label = "Split the scatterplot by",
          choices = c(input$SelectIV,input$SelectGeno,input$SelectTime,input$SelectID),
          multiple = F,
          selected= input$SelectIV))
@@ -4475,7 +4521,7 @@ Optimal_cluster_number <- eventReactive(input$Go_KMClustering_advise, {
  
  
  output$Select_KMC_facet_scale <- renderUI({
-   if(is.null(KMClusters())){return()}
+   if(input$KMC_split_scatterplot == F){return()}
    else
      tagList(
        selectizeInput(
@@ -4507,17 +4553,23 @@ Optimal_cluster_number <- eventReactive(input$Go_KMClustering_advise, {
  
  
  output$kmeans_scatter_plot <- renderPlotly({
-   df <- KMC_data_for_barplot()
+   df <- barplotData()
    df$cluster <-as.factor(df$cluster)
    p <- ggplot(df, aes(x = df[,input$xcol_kmeans], y = df[,input$ycol_kmeans], color = cluster)) + 
      geom_point()+
-     xlab(input$xcol_kmeans) +ylab(input$ycol_kmeans) + facet_wrap(~ df[,input$facet_KMC_plot], scale = input$Select_KMC_facet_sc)
+     xlab(input$xcol_kmeans) +ylab(input$ycol_kmeans) 
+   if(input$KMC_split_scatterplot == T){
+  p<- p+ facet_wrap(~ df[,input$facet_KMC_plot], scale = input$Select_KMC_facet_sc)}
    if(input$Select_KMC_background == T){
      p <- p + theme_minimal()}
    if(input$Select_KMC_grid == T){
      p <- p + theme(panel.grid.major = element_blank())}
    
  p
+   
+   #df %>% ggplot(aes_string(input$xcol_kmeans, input$ycol_kmeans)) + geom_point(aes_string(colour =
+  # "cluster"))
+#ggplotly()
  })
   
   # end of the script
