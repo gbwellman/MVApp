@@ -436,9 +436,9 @@ navbarPage("",
                                  dataTableOutput("MDS_table_samples")),
                         tabPanel("Scaling of the Dependent Variables",
                                  downloadButton("MDS_plot_download_transposed", "Download plot"),
-                                 plotOutput("MDS_sample_graph_transposed"),
-                                 uiOutput("MDS_downl_transposed"),
-                                 dataTableOutput("MDS_sample_table_transposed")
+                                 plotOutput("MDS_sample_graph_transposed")
+                                 #uiOutput("MDS_download_transposed"),
+                                 #dataTableOutput("MDS_sample_table_transposed_dt")
                                  )
                         ))
              

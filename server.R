@@ -3907,7 +3907,7 @@ function(input, output) {
       id_lista2 <- setdiff(id_lista, subset_lista)
       temp$subset_id <- do.call(paste,c(temp[c(subset_lista)], sep="_"))
       temp3 <- subset(temp, temp$subset_id == input$MDS_subset_S)
-      temp3$id <- do.call(paste,c(temp3[c(id_lista2, subset_lista)], sep="_"))
+      temp3$id <- do.call(paste,c(temp3[c(id_lista2)], sep="_"))
       temp2 <- subset(temp3, select = c("id", input$MDS_pheno))
     }
     if(input$MDS_subset_Q == "Full dataset"){{
@@ -3915,16 +3915,16 @@ function(input, output) {
       temp2 <- subset(temp, select = c("id", input$MDS_pheno))
     }}
     
+    temp3 <- as.matrix(temp2[,2:ncol(temp2)])
+    row.names(temp3) <- temp2$id
     
     #### CHECK 
     if(input$MDS_Scale_Q == T){
-      temp3 <- scale(temp2[,2:ncol(temp2)])
-      temp4 <- cbind(temp2[,1], temp3)
-      temp2 <- temp4
+      temp3 <- scale(temp3)
       #colnames(temp2)[1] <- "id"
     }
     
-    return(temp2)
+    return(temp3)
   })
   
   output$MDS_final_table <- renderDataTable({
@@ -3933,12 +3933,8 @@ function(input, output) {
   
   MDS_Calculations <- eventReactive(input$Go_MDS,{
     data <- MDS_final_data()
-    data2 <- data[,2:ncol(data)]
-    data2m <- as.matrix(data2)
-    row.names(data2m) <- data$id
     
-   
-      mds <- data2m %>%
+      mds <- data %>%
         dist() %>%          
         cmdscale() %>%
         as_tibble()
@@ -3952,13 +3948,16 @@ function(input, output) {
           mutate(groups = clust)
       }
     
-    data$Dim1 <- mds$Dim.1
-    data$Dim2 <- mds$Dim.2
+    data_df <- as.data.frame(data)
+    data_df$id <- row.names(data)
+        
+    data_df$Dim1 <- mds$Dim.1
+    data_df$Dim2 <- mds$Dim.2
     if(input$MDS_KMC_Q == T){
-      data$K_cluster <- mds$groups
+      data_df$K_cluster <- mds$groups
     }
     
-    data
+    return(data_df)
   })
   
   output$MDS_sample_graph <- renderPlotly({
@@ -3984,12 +3983,27 @@ function(input, output) {
     content = function(file) {
       pdf(file)
       data <- MDS_Calculations()
-      print(data)
+      
+      if(input$MDS_KMC_Q == T){
+        super_plot <- ggplot(data = data, aes(x = Dim1, y= Dim2, colour = K_cluster))
+      }
+      
+      else{
+        super_plot <- ggplot(data = data, aes(x = Dim1, y= Dim2))
+      }
+      
+      super_plot <- super_plot + geom_point()
+      super_plot <- super_plot + xlab("Dimension 1")
+      super_plot <- super_plot + ylab("Dimension 2")
+      
+      
+      print(super_plot)
       dev.off()
     })  
 
   output$MDS_table_samples  <- renderDataTable({
-    MDS_Calculations()
+    data <- MDS_Calculations()
+    data
   })
   
   output$MDS_download_samples <- renderUI({
@@ -4007,20 +4021,9 @@ function(input, output) {
   
   # >> Transposed MDS << 
   
-  MDS_transposed <- eventReactive(input$Go_MDS,{
-    data <- MDS_final_data()
-    datam <- as.matrix(data[,2:ncol(data)])
-    row.names(datam) <- data$id
-    tdatam <- t(datam)
-    tdatam
-  })
-  
-  
   MDS_Calculations_transposed <- eventReactive(input$Go_MDS,{
     data <- MDS_final_data()
-    datam <- as.matrix(data[,2:ncol(data)])
-    row.names(datam) <- data$id
-    tdatam <- t(datam)
+    tdatam <- t(data)
     
       mds <- tdatam %>%
         dist() %>%          
@@ -4039,6 +4042,7 @@ function(input, output) {
     tdatam_df <- as.data.frame(tdatam) 
     tdatam_df$Dim1 <- mds$Dim.1
     tdatam_df$Dim2 <- mds$Dim.2
+    
     if(input$MDS_KMC_Q == T){
       tdatam_df$K_cluster <- mds$groups
     }
@@ -4048,39 +4052,16 @@ function(input, output) {
     tdatam_df
   })
   
-  ##########
-  output$MDS_table_samples  <- renderDataTable({
-    MDS_Calculations()
-  })
-  
-  output$MDS_download_samples <- renderUI({
-    if(is.null(MDS_Calculations())){
-      return()}
-    else
-      downloadButton("data_MDS", label="Download MDS data")
-  })
-  
-  output$coord_ind <- downloadHandler(
-    filename = "MDS samples_MVApp.csv",
-    content <- function(file) {
-      write.csv(MDS_Calculations(), file)}
-  )
-  
-  ############
-  
-  output$MDS_sample_table_transposed <- renderDataTable({
+  output$MDS_sample_table_transposed_dt <- renderDataTable({
     data <- MDS_Calculations_transposed()
-    data <- data
-    if(input$MDS_KMC_Q == T){
-      data_sub <- subset(data, select = c(id, Dim1, Dim2, K_cluster))
-    }
-    if(input$MDS_KMC_Q == F){
-      data_sub <- subset(data, select = c(id, Dim1, Dim2))
-    }
-    colnames(data_sub)[1] <- "Dependent Variable"
-    row.names(data_sub) <- NULL
-    data_sub
     
+    if(input$MDS_KMC_Q == T){
+      data_sub <- subset(data, select = c(Dim1, Dim2, K_cluster))
+    }
+    else{
+      data_sub <- subset(data, select = c(Dim1, Dim2))
+    }
+    data_sub
   })
   
   output$MDS_download_transposed <- renderUI({
@@ -4090,10 +4071,22 @@ function(input, output) {
       downloadButton("data_MDS", label="Download transposed MDS data")
   })
   
-  output$MDS_downl_transposed <- downloadHandler(
+  output$data_MDS <- downloadHandler(
     filename = "MDS samples transposed_MVApp.csv",
     content <- function(file) {
-      write.csv(MDS_Calculations_transposed(), file)}
+      
+      data <- MDS_Calculations_transposed()
+      
+      if(input$MDS_KMC_Q == T){
+        data_sub <- subset(data, select = c(id, Dim1, Dim2, K_cluster))
+      }
+      if(input$MDS_KMC_Q == F){
+        data_sub <- subset(data, select = c(id, Dim1, Dim2))
+      }
+      colnames(data_sub)[1] <- "Dependent Variable"
+      row.names(data_sub) <- NULL
+      
+      write.csv(data_sub, file)}
   )
   
   output$MDS_sample_graph_transposed <- renderPlot({
@@ -4120,7 +4113,20 @@ function(input, output) {
     content = function(file) {
       pdf(file)
       data <- MDS_Calculations_transposed()
-      print(data)
+      if(input$MDS_KMC_Q == T){
+        super_plot <- ggplot(data = data, aes(x = Dim1, y= Dim2, colour = K_cluster, label = data$id))
+      }
+      
+      else{
+        super_plot <- ggplot(data = data, aes(x = Dim1, y= Dim2, label = data$id))
+      }
+      
+      super_plot <- super_plot + geom_point()
+      super_plot <- super_plot + geom_text_repel()
+      super_plot <- super_plot + xlab("Dimension 1")
+      super_plot <- super_plot + ylab("Dimension 2")
+      
+      print(super_plot)
       dev.off()
     })  
   
