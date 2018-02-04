@@ -3471,7 +3471,7 @@ output$OT_graph_download_ui <- renderUI({
       numericInput(
         inputId = "cor_sig_threshold",
         label = "p-value threshold:",
-        value = 0.05
+        value = 0.05, step = 0.01
       )
     }
   })
@@ -3786,7 +3786,6 @@ output$OT_graph_download_ui <- renderUI({
 })
   
   ############ interactive scatter plot ##########
-  
   output$Pheno1 <- renderUI({
     if (is.null(input$SelectDV)) {
       return ()
@@ -3808,8 +3807,9 @@ output$OT_graph_download_ui <- renderUI({
       tagList(
         selectizeInput(
           inputId = "Pheno2",
-          label = "Select the first dependent variable to be plotted on the y-axis:",
-          choices = input$SelectDV,
+          label = "Select the second dependent variable to be plotted on the y-axis:",
+          # choices = input$SelectDV,
+          choices = input$SelectDV[! input$SelectDV %in% c(input$Pheno1)],
           multiple = F
         )
       )
@@ -3834,7 +3834,7 @@ output$OT_graph_download_ui <- renderUI({
     my_data <- data.frame(my_data())
     my_data[,input$Color] <- as.factor(my_data[,input$Color])
     my_data %>% ggplot(aes_string(input$Pheno1, input$Pheno2)) + geom_point(aes_string(colour =
-                                                                                         input$Color))
+                                                                                         input$Color)) +  theme_minimal()
   })
   
   output$scatterplot <- renderPlotly({
