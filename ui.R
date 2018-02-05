@@ -458,9 +458,13 @@ tabPanel("K-means Clustering", icon = icon("barcode"),
          
          mainPanel(
            navbarPage("KMC",
+                      tabPanel("Selected dataset",
+                               dataTableOutput("KMC_data_table")
+                               ),
+                      tabPanel("Final data for K-means",
+                               dataTableOutput("KMCluster_test")
+                               ),
                       tabPanel("Optimal number of clusters",
-                               dataTableOutput("KMC_data_table"),
-                               #dataTableOutput("KMCluster_test"),
                                column(6, plotOutput("elbow_graph_KMC")),
                                column(6, plotOutput("silhouette_graph_KMC")),
                                #plotOutput("gapstat_graph_KMC"),
@@ -471,7 +475,7 @@ tabPanel("K-means Clustering", icon = icon("barcode"),
                                # all three plots with prediction of best clusters
                                # + 30 indices results (report & graph)
                                ),
-                      tabPanel("K means clustering results",
+                      tabPanel("K means clustering bar plots",
                                uiOutput("Select_KMC_trait"),
                                uiOutput("facet_barplot_of_KMC"),
                                uiOutput("Select_KMC_facet_barplot"),
@@ -481,7 +485,9 @@ tabPanel("K-means Clustering", icon = icon("barcode"),
                                uiOutput("Select_KMC_background_barplot"),
                                uiOutput("Select_KMC_grid_barplot"),
                                plotlyOutput("kmeans_barplots"),
-                               hr(),
+                               hr()
+                               ),
+                      tabPanel("K means clustering scatter plots",
                                column(4,uiOutput("xcol_kmeans_scatter")),
                                column(4,uiOutput("ycol_kmeans_scatter")),
                                uiOutput("facet_scatterplot_of_KMC"),
@@ -490,7 +496,9 @@ tabPanel("K-means Clustering", icon = icon("barcode"),
                                uiOutput("Select_KMC_background_to_plot"),
                                uiOutput("Select_KMC_grid_to_plot"),
                                #dataTableOutput("KMC_test2"),
-                               column(12,plotlyOutput("kmeans_scatter_plot")),
+                               column(12,plotlyOutput("kmeans_scatter_plot"))
+                               ),
+                      tabPanel("K means clustering data table",
                                dataTableOutput("KMC_test")
                       )
                    #   tabPanel("Cluster validation",
