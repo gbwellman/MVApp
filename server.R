@@ -414,7 +414,7 @@ function(input, output) {
       }
       
       if(input$model == "smooth"){
-        if(input$spline_df == "user determined"){
+        if(input$spline_df == "user defined"){
           degree <- input$model_smoothski_df
           fit_smooth <- smooth.spline(x = super_temp3[, 4], y = super_temp3[, 5], df=degree)}
         if(input$spline_df == "automatic"){
@@ -456,11 +456,49 @@ function(input, output) {
       cat("\n")
       cat("You should consider checking those samples using fit-plots and even going back to your original data.")
       cat("\n")
-      
-      
-      
     }
   })
+  
+  
+  
+  
+  good_r2 <- reactive({
+    subselection <- Model_temp_data()
+    subselection$plant_id <- paste(subselection[,input$IVModelIV], subselection[,input$IVModelSubIV], subselection[,input$SelectID], sep="_")    
+    subselection <- subset(subselection, subselection$r_squared > 0.7)
+
+    
+    data <- my_data()
+    data$plant_id <- paste(data[,input$IVModelIV], data[,input$IVModelSubIV], data[,input$SelectID], sep="_")
+    
+    good_r2 <- subset(data, data$plant_id %in% subselection$plant_id)
+    good_r2 <- good_r2[, !(names(good_r2) == "plant_id")]
+    good_r2
+    })
+  
+  output$Good_r2_table <- renderDataTable({
+    if(is.null(Model_temp_data())){
+      return(NULL)
+    }
+    else
+    good_r2 <- good_r2()
+    good_r2
+  })
+  
+  
+  output$Download_good_r2_table_button <- renderUI({
+    if(is.null(Model_temp_data())){
+      return(NULL)}
+    else
+      downloadButton("Download_good_r2_data", label = "Download curated data with r2 > 0.7")
+  })
+  
+  output$Download_good_r2_data <- downloadHandler(
+    filename = function(){paste("Data curated based on modelling of ", input$ModelPheno, " using ", input$model, " with r2 > 0.7 MVApp", ".csv" , sep="") },
+    content <- function(file){
+      good_r2 <- good_r2()
+      write.csv(good_r2, file)
+      })
   
   
   output$Model_data <- renderDataTable({
@@ -597,8 +635,8 @@ function(input, output) {
       timelims <- range(time)
       time.grid <- seq(from = timelims[1], to = timelims[2])
       plot(pheno ~ time, main = title, ylab = input$ModelPheno, xlab = input$SelectTime)
-      points(time.grid, predict(fit_cub, newdata=list(time = time.grid)), col = "darkgreen")
-      abline(v=c(input$cubic_knots), lty=2, col="darkgreen")
+      points(time.grid, predict(fit_cub, newdata=list(time = time.grid)), col = "hotpink3")
+      abline(v=c(input$cubic_knots), lty=2, col="hotpink3")
     }
     
     if(input$model == "smooth"){
@@ -726,8 +764,8 @@ function(input, output) {
         timelims <- range(time)
         time.grid <- seq(from = timelims[1], to = timelims[2])
         plot(pheno ~ time, main = title, ylab = input$ModelPheno, xlab = input$SelectTime)
-        points(time.grid, predict(fit_cub, newdata=list(time = time.grid)), col = "darkgreen")
-        abline(v=c(input$cubic_knots), lty=2, col="darkgreen")
+        points(time.grid, predict(fit_cub, newdata=list(time = time.grid)), col = "hotpink3")
+        abline(v=c(input$cubic_knots), lty=2, col="hotpink3")
       }
       
       if(input$model == "smooth"){
@@ -749,6 +787,156 @@ function(input, output) {
       Fit_plot_multi_graphs()
     }
   })
+  
+  output$Model_fit_graph_download_button <- renderUI({
+    if(is.null(Model_temp_data())){
+      return()
+    }
+    else
+      downloadButton("Download_model_fit_graph", label = "Download fit-plot(s)")
+  })
+  
+  output$Download_model_fit_graph <- downloadHandler(
+    filename = function(){paste("Modelled ", input$ModelPheno, " using ", input$model, " MVApp", ".pdf" , sep="") },
+    content <- function(file){
+      pdf(file)
+      
+      if(input$Select_model_type_plot == "single plot"){
+       
+        
+        docelowy <- data_model_plot()
+        
+        if(input$model == "lin"){
+          pheno <- docelowy[,input$ModelPheno]
+          time <- docelowy[,input$SelectTime]
+          title <- unique(docelowy$selection)
+          print(plot(pheno ~ time, main = title, ylab = input$ModelPheno, xlab = input$SelectTime))
+          abline(lm(pheno ~ time), col="red")
+        }
+        
+        if (input$model == "quad") {
+          docelowy$helper <- sqrt(docelowy[, input$ModelPheno])
+          pheno <- docelowy$helper
+          time <- docelowy[,input$SelectTime]
+          title <- unique(docelowy$selection)
+          print(plot(pheno ~ time, main = title, ylab = paste("sqrt(",input$ModelPheno,")"), xlab = input$SelectTime))
+          abline(lm(pheno ~ time), col="red")
+        }
+        
+        if (input$model == "exp") {
+          docelowy$helper <- log(docelowy[, input$ModelPheno])
+          pheno <- docelowy$helper
+          time <- docelowy[,input$SelectTime]
+          title <- unique(docelowy$selection)
+          print(plot(pheno ~ time, main = title, ylab = paste("log(",input$ModelPheno,")"), xlab = input$SelectTime))
+          abline(lm(pheno ~ time), col="red")
+        }
+        
+        if (input$model == "sqr") {
+          docelowy$helper <- (docelowy[, input$ModelPheno])^2
+          pheno <- docelowy$helper
+          time <- docelowy[,input$SelectTime]
+          title <- unique(docelowy$selection)
+          print(plot(pheno ~ time, main = title, ylab = paste(input$ModelPheno, "^2"), xlab = input$SelectTime))
+          abline(lm(pheno ~ time), col="red")
+        }
+        
+        if(input$model == "cubic"){
+          pheno <- docelowy[,input$ModelPheno]
+          time <- docelowy[,input$SelectTime]
+          fit_cub <- lm(pheno ~ bs(time, knots = input$cubic_knots))
+          title <- unique(docelowy$selection)
+          timelims <- range(time)
+          time.grid <- seq(from = timelims[1], to = timelims[2])
+          print(plot(pheno ~ time, main = title, ylab = input$ModelPheno, xlab = input$SelectTime))
+          points(time.grid, predict(fit_cub, newdata=list(time = time.grid)), col = "hotpink3")
+          abline(v=c(input$cubic_knots), lty=2, col="hotpink3")
+        }
+        
+        if(input$model == "smooth"){
+          fit_smooth <- smooth.spline(x = docelowy[,4], y = docelowy[,5], cv=T)
+          pheno <- docelowy[,input$ModelPheno]
+          time <- docelowy[,input$SelectTime]
+          title <- unique(docelowy$selection)
+          print(plot(docelowy[,5] ~ docelowy[,4], main = title, ylab = input$ModelPheno, xlab = input$SelectTime))
+          lines(fit_smooth, col="purple", lwd=2)
+        } 
+        
+        
+      }
+      
+      if(input$Select_model_type_plot == "multiple plots"){
+        
+        docelowy <- example_model()
+        real_list <- unique(docelowy$lista)
+        
+        par(mfrow=c(4,5))
+        
+        
+        for(i in 1:length(real_list)){
+          super_temp <- subset(docelowy, docelowy$lista == real_list[i])  
+          
+          # The graph instruction from single plot - so should work :P
+          if(input$model == "lin"){
+            pheno <- super_temp[,input$ModelPheno]
+            time <- super_temp[,input$SelectTime]
+            title <- real_list[i]
+            print(plot(pheno ~ time, main = title, ylab = input$ModelPheno, xlab = input$SelectTime))
+            abline(lm(pheno ~ time), col="red")
+          }
+          
+          if (input$model == "quad") {
+            super_temp$helper <- sqrt(super_temp[, input$ModelPheno])
+            pheno <- super_temp$helper
+            time <- super_temp[,input$SelectTime]
+            title <- real_list[i]
+            print(plot(pheno ~ time, main = title, ylab = paste("sqrt(",input$ModelPheno,")"), xlab = input$SelectTime))
+            abline(lm(pheno ~ time), col="red")
+          }
+          
+          if (input$model == "exp") {
+            super_temp$helper <- log(super_temp[, input$ModelPheno])
+            pheno <- super_temp$helper
+            time <- super_temp[,input$SelectTime]
+            title <- real_list[i]
+            print(plot(pheno ~ time, main = title, ylab = paste("log(",input$ModelPheno,")"), xlab = input$SelectTime))
+            abline(lm(pheno ~ time), col="red")
+          }
+          
+          if (input$model == "sqr") {
+            super_temp$helper <- (super_temp[, input$ModelPheno])^2
+            pheno <- super_temp$helper
+            time <- super_temp[,input$SelectTime]
+            title <- real_list[i]
+            print(plot(pheno ~ time, main = title, ylab = paste(input$ModelPheno, "^2"), xlab = input$SelectTime))
+            abline(lm(pheno ~ time), col="red")
+          }
+          
+          if(input$model == "cubic"){
+            pheno <- super_temp[,input$ModelPheno]
+            time <- super_temp[,input$SelectTime]
+            fit_cub <- lm(pheno ~ bs(time, knots = input$cubic_knots))
+            title <- real_list[i]
+            timelims <- range(time)
+            time.grid <- seq(from = timelims[1], to = timelims[2])
+            print(plot(pheno ~ time, main = title, ylab = input$ModelPheno, xlab = input$SelectTime))
+            points(time.grid, predict(fit_cub, newdata=list(time = time.grid)), col = "hotpink3")
+            abline(v=c(input$cubic_knots), lty=2, col="hotpink3")
+          }
+          
+          if(input$model == "smooth"){
+            fit_smooth <- smooth.spline(x = super_temp[,4], y = super_temp[,5], cv=T)
+            pheno <- super_temp[,input$ModelPheno]
+            time <- super_temp[,input$SelectTime]
+            title <- real_list[i]
+            print(plot(super_temp[,5] ~ super_temp[,4], main = title, ylab = input$ModelPheno, xlab = input$SelectTime))
+            lines(fit_smooth, col="purple", lwd=2)
+          }
+        }
+      }
+      dev.off()
+    }
+  )
   
   output$Model_download_button <- renderUI({
     if(is.null(Model_temp_data())){
@@ -1228,6 +1416,7 @@ output$downl_plot_MCP <- downloadHandler(
   
   
   
+  
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   #  - - - - - - - - - - >> DATA CURATION IN 4th TAB << - - - - - - - - - - - - - -
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1265,13 +1454,17 @@ output$downl_plot_MCP <- downloadHandler(
   
   output$Pheno_outliers <- renderUI({
     if(is.null(ItemList()) | (input$Out_pheno_single_multi == "All phenotypes")){return()}
-    else
-      tagList(
-        selectizeInput("DV_outliers",
-                       label = "Selected phenotype for the outlier selection",
-                       choices= input$SelectDV,
-                       multiple=F)
-      )})
+    if(input$Out_pheno_single_multi == "Single phenotype"){
+      selectizeInput("DV_outliers",
+                     label = "Selected phenotype for the outlier selection",
+                     choices= input$SelectDV,
+                     multiple=F)}
+    else{
+      selectizeInput("DV_outliers",
+                     label = "Selected phenotype for the outlier selection",
+                     choices= input$SelectDV,
+                     multiple=T)}
+  })
   
   # Chose the phenotype for the graphs
   
@@ -1368,21 +1561,19 @@ output$downl_plot_MCP <- downloadHandler(
   
   # - - - - - - - - - - - - - >>  MAIN CALCULATIONS << - - - - - - - - - - - - - -
   
-  my_data_nona <- eventReactive(input$Go_omitna == T, {
-    my_data_nona <- my_data()[complete.cases(my_data()),] #use na.omit instead maybe?
-    return(my_data_nona)
-  })
   
   # General outlier testing table => highlighting the plants with problems in multiple traits:
   Outlier_overview <- eventReactive(input$Go_outliers,{
-    if(input$Go_omitna == T){
-      faka_boom <- my_data_nona()  
-    }
-    if(input$Go_omitna == F){
-      faka_boom <- my_data()
-    }
-    faka_boom$id_test <- do.call(paste,c(faka_boom[c(input$IV_outliers)], sep = "_"))
+    if(input$Outlier_on_data == "raw data"){
+      faka_boom <- my_data()}
+    if(input$Outlier_on_data == "r2 fitted curves curated data"){
+      faka_boom <- good_r2()}
+    if(input$Outlier_on_data == "missing values removed data"){  
+      faka_boom <- my_data()[complete.cases(my_data()),]}
+    if(input$Outlier_on_data == "r2 fitted and missing values removed data"){
+      faka_boom <- good_r2()[complete.cases(my_data()),]}
     
+    faka_boom$id_test <- do.call(paste,c(faka_boom[c(input$IV_outliers)], sep = "_"))
     
     
     for(i in 1:length(input$SelectDV)){
@@ -1547,12 +1738,14 @@ output$downl_plot_MCP <- downloadHandler(
   
   Outlier_data <- eventReactive(input$Go_outliers, {
     
-    if(input$Go_omitna == T){
-      data_outl <- my_data_nona()  
-    }
-    if(input$Go_omitna == F){
-      data_outl <- my_data()
-    }
+    if(input$Outlier_on_data == "raw data"){
+      data_outl <- my_data()}
+    if(input$Outlier_on_data == "r2 fitted curves curated data"){
+      data_outl <- good_r2()}
+    if(input$Outlier_on_data == "missing values removed data"){  
+      data_outl <- my_data()[complete.cases(my_data()),]}
+    if(input$Outlier_on_data == "r2 fitted and missing values removed data"){
+      data_outl <- good_r2()[complete.cases(my_data()),]}
     
     outl <- subset(data_outl, select=c(input$SelectGeno, input$SelectIV, input$SelectTime, input$SelectID, input$DV_outliers))
     outl$id_test <- do.call(paste,c(outl[c(input$IV_outliers)], sep = "_"))
@@ -1694,6 +1887,164 @@ output$downl_plot_MCP <- downloadHandler(
     
   })
   
+  # testing outliers based on SOME phenotypes
+  
+  Outlier_some <- reactive({
+    
+    if(input$Outlier_on_data == "raw data"){
+      data_outl <- my_data()}
+    if(input$Outlier_on_data == "r2 fitted curves curated data"){
+      data_outl <- good_r2()}
+    if(input$Outlier_on_data == "missing values removed data"){  
+      data_outl <- my_data()[complete.cases(my_data()),]}
+    if(input$Outlier_on_data == "r2 fitted and missing values removed data"){
+      data_outl <- good_r2()[complete.cases(my_data()),]}
+    
+    outl <- data_outl
+    outl$id_test <- do.call(paste,c(outl[c(input$IV_outliers)], sep = "_"))
+    
+    list <- input$DV_outliers
+    
+    for(i in 1:length(list)){
+      pheno <- list[i]
+      outl$pheno <- outl[,pheno]
+      
+      # outliers based on 1.5IQR
+      if(input$outlier_method == "1.5*IQR away from the mean (default)"){
+        
+        bad_shit <- boxplot(outl[,pheno] ~ outl$id_test)$out
+        # Adding all the outliers as a column "outlier" with 1/0 values 
+        for(e in 1:nrow(outl)){
+          if(outl[,pheno][e] %in% bad_shit){
+            outl$outlier[e] <- TRUE }
+          else{ 
+            outl$outlier[e] <- FALSE }
+        }}
+      
+      # outliers based on Cooks distance
+      if(input$outlier_method == "Cook's Distance"){
+        
+        mod <- lm(outl[,pheno] ~ outl$id_test)
+        cooksd <- cooks.distance(mod)
+        outl$outlier <- cooksd > 4*mean(cooksd)
+      }
+      
+      # outliers based on car::outlierTest
+      if(input$outlier_method == "Bonferonni outlier test"){
+        
+        mod <- lm(outl[,pheno] ~ outl$id_test)
+        baddies <- car::outlierTest(mod)
+        bad_shit <- names(baddies[[1]])
+        bad_shit <- as.numeric(bad_shit)
+        outl$outlier <- FALSE
+        outl[bad_shit,]$outlier <- TRUE
+      }
+      
+      # outliers based on mean + SD  
+      
+      if(input$outlier_method == "1xStDev from the median"){
+        
+        out_sum <- summaryBy(pheno ~ id_test, data = outl, FUN=function(x) {c(median = median(x), sd = sd(x))})
+        out_sum$min <- (out_sum$pheno.median - (1*out_sum$pheno.sd))
+        out_sum$max <- (out_sum$pheno.median + (1*out_sum$pheno.sd))
+        out_sum <- subset(out_sum, select=c("id_test", "min", "max"))
+        outl <- merge(outl, out_sum, by="id_test")
+        for(i in 1:nrow(outl)){
+          if(outl$pheno[i] > outl$max[i]){
+            outl$outlier[i] <- TRUE
+          }
+          if(outl$pheno[i] < outl$min[i]){
+            outl$outlier[i] <- TRUE
+          }
+          else{
+            outl$outlier[i] <- FALSE
+          }}
+        drops <- c("min","max", "pheno")
+        outl <- outl[ , !(names(outl) %in% drops)]
+      }
+      
+      # outliers based on mean + 2*SD  
+      
+      if(input$outlier_method == "2xStDev from the median"){
+        
+        out_sum <- summaryBy(pheno ~ id_test, data = outl, FUN=function(x) {c(median = median(x), sd = sd(x))})
+        out_sum$min <- (out_sum$pheno.median - (2*out_sum$pheno.sd))
+        out_sum$max <- (out_sum$pheno.median + (2*out_sum$pheno.sd))
+        out_sum <- subset(out_sum, select=c("id_test", "min", "max"))
+        outl <- merge(outl, out_sum, by="id_test")
+        for(i in 1:nrow(outl)){
+          if(outl$pheno[i] > outl$max[i]){
+            outl$outlier[i] <- TRUE
+          }
+          if(outl$pheno[i] < outl$min[i]){
+            outl$outlier[i] <- TRUE
+          }
+          else{
+            outl$outlier[i] <- FALSE
+          }}
+        drops <- c("min","max", "pheno")
+        outl <- outl[ , !(names(outl) %in% drops)]
+      }
+      
+      # outliers based on mean + 2.5*SD  
+      
+      if(input$outlier_method == "2.5xStDev from the median"){
+        
+        out_sum <- summaryBy(pheno ~ id_test, data = outl, FUN=function(x) {c(median = median(x), sd = sd(x))})
+        out_sum$min <- (out_sum$pheno.median - (2.5*out_sum$pheno.sd))
+        out_sum$max <- (out_sum$pheno.median + (2.5*out_sum$pheno.sd))
+        out_sum <- subset(out_sum, select=c("id_test", "min", "max"))
+        outl <- merge(outl, out_sum, by="id_test")
+        for(i in 1:nrow(outl)){
+          if(outl$pheno[i] > outl$max[i]){
+            outl$outlier[i] <- TRUE
+          }
+          if(outl$pheno[i] < outl$min[i]){
+            outl$outlier[i] <- TRUE
+          }
+          else{
+            outl$outlier[i] <- FALSE
+          }}
+        drops <- c("min","max", "pheno")
+        outl <- outl[ , !(names(outl) %in% drops)]
+      }
+      
+      # outliers based on mean + 3*SD  
+      
+      if(input$outlier_method == "3xStDev from the median"){
+        
+        out_sum <- summaryBy(pheno ~ id_test, data = outl, FUN=function(x) {c(median = median(x), sd = sd(x))})
+        out_sum$min <- (out_sum$pheno.median - (3*out_sum$pheno.sd))
+        out_sum$max <- (out_sum$pheno.median + (3*out_sum$pheno.sd))
+        out_sum <- subset(out_sum, select=c("id_test", "min", "max"))
+        outl <- merge(outl, out_sum, by="id_test")
+        for(i in 1:nrow(outl)){
+          if(outl$pheno[i] > outl$max[i]){
+            outl$outlier[i] <- TRUE
+          }
+          if(outl$pheno[i] < outl$min[i]){
+            outl$outlier[i] <- TRUE
+          }
+          else{
+            outl$outlier[i] <- FALSE
+          }}
+        drops <- c("min","max", "pheno")
+        outl <- outl[ , !(names(outl) %in% drops)]
+      }
+      drops <- c("pheno")
+      outl <- outl[ , !(names(outl) %in% drops)]
+      colnames(outl)[which(names(outl) == "outlier")] <- paste("out", pheno, sep="_")
+      
+    }
+    drops <- c("id_test")
+    outl <- outl[ , !(names(outl) %in% drops)]
+    
+    data_outl <- outl
+    # data_outl$outlier <- outl$outlier
+    return(data_outl)
+    
+  })
+  
   
   Outliers_final_data <- eventReactive(input$Go_outliers,{
     if(input$Out_pheno_single_multi == "All phenotypes"){
@@ -1701,6 +2052,9 @@ output$downl_plot_MCP <- downloadHandler(
     }
     if(input$Out_pheno_single_multi == "Single phenotype"){
       data_blob <- Outlier_data()  
+    }
+    if(input$Out_pheno_single_multi == "Some phenotypes"){
+      data_blob <- Outlier_some()
     }
     return(data_blob)
   })
@@ -1792,6 +2146,23 @@ output$downl_plot_MCP <- downloadHandler(
       pheno <-paste(input$DV_outliers)
       method <- paste(input$outlier_method)
     }
+    if(input$Out_pheno_single_multi == "Some phenotypes"){
+      
+      size <- length(input$DV_outliers)
+      start_row <- (dim(tescior)[2] - size + 1)
+      end_row <- dim(tescior)[2]
+      
+      for(x in 1:nrow(tescior)){
+        z <- tescior[x,start_row:end_row]
+        tescior$Add_outliers[x] <- length(z[z==TRUE]) 
+      }
+      number0 <- subset(tescior, tescior$Add_outliers >= 1)
+      
+      number <- nrow(number0)
+      pheno <-paste(input$DV_outliers)
+      method <- paste(input$outlier_method)
+    }
+    
     cat(paste("There are ", number," outliers identified based on", pheno, "using", method))
     cat("\n")
     cat("DISCLAIMER:") 
@@ -1803,22 +2174,94 @@ output$downl_plot_MCP <- downloadHandler(
   
   # Outlier free data (and table)
   Outlier_free_data <- eventReactive(input$Go_outliers,{
+    
+    good_shit <- Outliers_final_data()
+    
     if(input$Out_pheno_single_multi == "All phenotypes"){
-      good_shit <- Outliers_final_data()
-      good_shit2 <- subset(good_shit, good_shit$Add_outliers < input$outlier_cutoff)
+      
+      if(input$What_happens_to_outliers == "replaced by NA"){
+        for(i in 1:length(input$SelectDV)){
+          element <- input$SelectDV[i] 
+          selector <- paste("out", input$SelectDV[i], sep = "_")
+          
+          for(e in 1:nrow(good_shit)){
+            if(good_shit[e,selector] == TRUE)
+            {good_shit[e,element] <- NA }
+          }
+        }
+        good_shit2 <- good_shit
+      }
+      
+      if(input$What_happens_to_outliers == "removed together with entire row"){
+        good_shit2 <- subset(good_shit, good_shit$Add_outliers < input$outlier_cutoff)
+        
+      }
+      
       to_trash <- paste("out", input$SelectDV[1], sep = "_")
+      
       for(i in 2:length(input$SelectDV)){
         new_trash <- paste("out", input$SelectDV[i], sep = "_")
-        to_trash <- c(to_trash, new_trash)
-      }
+        to_trash <- c(to_trash, new_trash)}
       to_trash <- c(to_trash, "Add_outliers")
     }
+    
     if(input$Out_pheno_single_multi == "Single phenotype"){
-      good_shit <-  Outliers_final_data()
-      good_shit2 <- subset(good_shit, good_shit$outlier == FALSE)
+      
+      element <- input$DV_outliers
+      
+      if(input$What_happens_to_outliers == "replaced by NA"){
+        for(e in 1:nrow(good_shit)){
+          if(good_shit[e,"outlier"] == TRUE)
+          {good_shit[e,element] <- NA}
+        }
+        good_shit2 <- good_shit
+      }
+      
+      if(input$What_happens_to_outliers == "removed together with entire row"){
+        good_shit2 <- subset(good_shit, good_shit$outlier == FALSE)
+      }
       to_trash <- "outlier"
     }
+    
+    if(input$Out_pheno_single_multi == "Some phenotypes"){
+      
+      if(input$What_happens_to_outliers == "replaced by NA"){
+        
+        list <- input$DV_outliers
+        
+        for(i in 1:length(list)){
+          element <- list[i] 
+          selector <- paste("out", element, sep="_")
+          
+          for(e in 1:nrow(good_shit)){
+            if(good_shit[e,selector] == TRUE)
+            {good_shit[e,element] <- NA}
+          }}
+        good_shit2 <- good_shit
+      }
+      
+      if(input$What_happens_to_outliers == "removed together with entire row"){
+        size <- length(input$DV_outliers)
+        start_row <- (dim(good_shit)[2] - size + 1)
+        end_row <- dim(good_shit)[2]
+        
+        for(x in 1:nrow(good_shit)){
+          z <- good_shit[x,start_row:end_row]
+          good_shit$Add_outliers[x] <- length(z[z==TRUE]) 
+        }
+        good_shit2 <- subset(good_shit, good_shit$Add_outliers < 1)
+      }
+      
+      to_trash <- paste("out", input$DV_outliers[1], sep = "_")
+      
+      for(i in 2:length(input$DV_outliers)){
+        new_trash <- paste("out", input$DV_outliers[i], sep = "_")
+        to_trash <- c(to_trash, new_trash)
+        to_trash <- c(to_trash, "Add_outliers")
+      }}
+    
     good_shit2 <- good_shit2[, !(names(good_shit2)) %in% to_trash]
+    
     return(good_shit2)
   })
   
@@ -1827,6 +2270,21 @@ output$downl_plot_MCP <- downloadHandler(
     if(input$Out_pheno_single_multi == "All phenotypes"){
       bad_shit <- Outliers_final_data() 
       bad_shit2 <- subset(bad_shit, bad_shit$Add_outliers >= input$outlier_cutoff)
+    }
+    if(input$Out_pheno_single_multi == "Some phenotypes"){
+      bad_shit <- Outliers_final_data() 
+      size <- length(input$DV_outliers)
+      start_row <- dim(bad_shit)[2] - size + 1
+      end_row <- dim(bad_shit)[2]
+      
+      for(x in 1:nrow(bad_shit)){
+        z <- bad_shit[x,start_row:end_row]
+        bad_shit$Add_outliers[x] <- length(z[z==TRUE]) 
+      }
+      bad_shit2 <- subset(bad_shit, bad_shit$Add_outliers > 0)
+      to_trash <- ("Add_outliers")
+      bad_shit2 <- bad_shit2[, !(names(bad_shit2)) %in% to_trash]
+      
     }
     if(input$Out_pheno_single_multi == "Single phenotype"){
       bad_shit <- Outliers_final_data() 
@@ -1923,12 +2381,15 @@ output$downl_plot_MCP <- downloadHandler(
   # = = = >> GRAPH CONTAINING ALL THE DATA << = = = 
     
   OutG <- reactive({  
-    if(input$Go_omitna == T){
-      data_outl <- my_data_nona()  
-    }
-    if(input$Go_omitna == F){
-      data_outl <- my_data()
-    }
+    
+    if(input$Outlier_on_data == "raw data"){
+      data_outl <- my_data()}
+    if(input$Outlier_on_data == "r2 fitted curves curated data"){
+      data_outl <- good_r2()}
+    if(input$Outlier_on_data == "missing values removed data"){  
+      data_outl <- my_data()[complete.cases(my_data()),]}
+    if(input$Outlier_on_data == "r2 fitted and missing values removed data"){
+      data_outl <- good_r2()[complete.cases(my_data()),]}
     
     # # # # >> START OF KINKY SECTION << # # # # #
     
@@ -2247,13 +2708,20 @@ output$downl_plot_MCP <- downloadHandler(
   
   
   output$na_report <- renderText({
-    if(input$Go_omitna == F){
-      return()
-    }
-    else{
-      sum_na<-nrow(my_data())-nrow(my_data_nona())
+    if(input$Outlier_on_data == "missing values removed data"){
+      my_data_nona <- my_data()[complete.cases(my_data()),] 
+      sum_na<-nrow(my_data())-nrow(my_data_nona)
       return(paste(sum_na, " rows containing missing values that were removed.")) 
     }
+    
+    if(input$Outlier_on_data == "r2 fitted and missing values removed data"){
+    my_data_nona <- good_r2()[complete.cases(good_r2()),]
+    sum_na <- nrow(good_r2()) - nrow(my_data_nona)  
+    return(paste(sum_na, " rows containing missing values that were removed.")) }
+    
+    else{
+      return()
+  }
   })
   
   # = = = = = = >> SUMMARY STATS << = = = = = = = = = 
@@ -2265,7 +2733,7 @@ output$downl_plot_MCP <- downloadHandler(
     } else tagList(
       selectizeInput(inputId = "SelectDataSumm",
                      label = "Dataset to be used for the summary stats",
-                     choices= c("raw data", "missing values removed", "outliers removed"), selected="raw data", multiple = F))
+                     choices= c("raw data", "r2 fitted curves curated data", "missing values removed data", "r2 fitted curves curated data", "r2 fitted curves curated data with missing values removed", "outliers removed data"), selected="raw data", multiple = F))
   })
   
   output$CustomSumm <- renderUI({
@@ -2275,7 +2743,6 @@ output$downl_plot_MCP <- downloadHandler(
                      label = "Calculations to perform:", 
                      choices=c("Mean", "Median", "StdDev", "StdErr", "Min", "Max", "Sum", "No.samples"), multiple=T))
   })
-  
   
   ## Added list of summary functions "summfuns"   %% Mitch %%
   summfuns<-list(Mean = function(x) mean(x),
@@ -2294,13 +2761,26 @@ output$downl_plot_MCP <- downloadHandler(
       melted_icecream <- melted_icecream[ , !(names(melted_icecream)%in% drops)]
       melted_icecream <- melt(melted_icecream, id=c(input$SelectGeno, input$SelectIV, input$SelectTime))
     }
-    if(input$SelectDataSumm == "missing values removed"){
-      melted_icecream <- my_data_nona()
+    
+    if(input$SelectDataSumm == "r2 fitted curves curated data"){
+      melted_icecream <- good_r2()
       drops <-input$SelectID
       melted_icecream <- melted_icecream[ , !(names(melted_icecream)%in% drops)]
       melted_icecream <- melt(melted_icecream, id=c(input$SelectGeno, input$SelectIV, input$SelectTime))
     }
-    if(input$SelectDataSumm == "outliers removed"){
+    if(input$SelectDataSumm == "missing values removed data"){  
+      melted_icecream <- my_data()[complete.cases(my_data()),]
+      drops <-input$SelectID
+      melted_icecream <- melted_icecream[ , !(names(melted_icecream)%in% drops)]
+      melted_icecream <- melt(melted_icecream, id=c(input$SelectGeno, input$SelectIV, input$SelectTime))
+    }
+    if(input$SelectDataSumm == "r2 fitted curves curated data with missing values removed"){
+      melted_icecream <- good_r2()[complete.cases(good_r2()),]
+      drops <-input$SelectID
+      melted_icecream <- melted_icecream[ , !(names(melted_icecream)%in% drops)]
+      melted_icecream <- melt(melted_icecream, id=c(input$SelectGeno, input$SelectIV, input$SelectTime))
+    }
+    if(input$SelectDataSumm == "outliers removed data"){
       melted_icecream <- Outlier_free_data()
       drops <-c(input$SelectID, "outlier")
       melted_icecream <- melted_icecream[ , !(names(melted_icecream)%in% drops)]
@@ -2355,17 +2835,25 @@ output$downl_plot_MCP <- downloadHandler(
         selectizeInput(
           inputId = "Histo_data",
           label = "Dataset to explore:",
-          choices = c("raw data", "missing values removed", "outliers removed"), multiple = F))
+          choices= c("raw data", "r2 fitted curves curated data", "missing values removed data", "r2 fitted curves curated data", "r2 fitted curves curated data with missing values removed", "outliers removed data"), selected="raw data", multiple = F))
   })  
   
   Histo_data_type <- eventReactive(exists(input$Histo_data),{
-    if(input$Histo_data == "raw data"){
+    
+    
+    if (input$Histo_data == "raw data") {
       Histo_data_type <- my_data()
     }
-    if(input$Histo_data == "missing values removed"){
-      Histo_data_type <- my_data_nona()
+    if (input$Histo_data == "missing values removed data") {
+      Histo_data_type <- my_data()[complete.cases(my_data()),]
     }
-    if(input$Histo_data == "outliers removed"){
+    if (input$Histo_data == "r2 fitted curves curated data") {
+      Histo_data_type <- good_r2()
+    }
+    if (input$Histo_data == "r2 fitted curves curated data with missing values removed") {
+      Histo_data_type <- good_r2()[complete.cases(good_r2()),]
+    }
+    if (input$Histo_data == "outliers removed data") {
       Histo_data_type <- Outlier_free_data()
     }
     Histo_data_type
@@ -2938,7 +3426,7 @@ output$subset_Variance <- renderUI({
       selectizeInput(
         inputId = "OT_testski",
         label = "Test for significance:",
-        choices = c("One sample t-test", "Two sample t-test", "Two sample chi-squared test"))
+        choices = c("One sample t-test", "Two sample t-test", "Kolmogorov-Smirnof test"))
   })
   
   output$OT_grouping_IVs <- renderUI({
@@ -3010,11 +3498,12 @@ output$subset_Variance <- renderUI({
       df <- testski$parameter[[1]]
       stat <- testski$statistic[[1]]
     }
-    if(input$OT_testski == "Two sample chi-squared test"){
-      testski <- chisq.test(data_sub$chosen_DV, data_sub$sample_id)
-      p_val <- testski$p.value
-      df <- testski$parameter[[1]]
-      stat <- testski$statistic[[1]]
+    if(input$OT_testski == "Kolmogorov-Smirnof test"){
+      x <- subset(data_sub, data_sub$sample_id == data_sub$subset_id[1])
+      y <- subset(data_sub, data_sub$sample_id == data_sub$subset_id[2])
+      p_val <- ks.test(x$chosen_DV, y$chosen_DV)$p.value
+      df <- "Kolmogorov-Smirnof test does not have degrees of freedom"
+      stat <- ks.test(x$chosen_DV, y$chosen_DV)$statistic[[1]]
     }
      
     bam <- p_val
@@ -3036,7 +3525,7 @@ output$subset_Variance <- renderUI({
     cat("\n")
     cat(paste("The degrees of freedom in the test: ", bec))
     cat("\n")
-    cat(paste("The value of the t-/chi-statistics in the test: ", bom))
+    cat(paste("The value of the t-/Kolmogorov-Smirnof statistics in the test: ", bom))
     
   })
  
@@ -3405,20 +3894,23 @@ output$OT_graph_download_ui <- renderUI({
         selectizeInput(
           inputId = "cor_data",
           label = "Dataset to correlate:",
-          choices = c("raw data", "missing values removed", "outliers removed"),
-          multiple = F
-        )
-      )
+          choices= c("raw data", "r2 fitted curves curated data", "missing values removed data", "r2 fitted curves curated data", "r2 fitted curves curated data with missing values removed", "outliers removed data"), selected="raw data", multiple = F))
   })
   
   cor_data_type <- eventReactive(input$cor_data, {
     if (input$cor_data == "raw data") {
       cor_data_type <- my_data()
     }
-    if (input$cor_data == "missing values removed") {
-      cor_data_type <- my_data_nona()
+    if (input$cor_data == "missing values removed data") {
+      cor_data_type <- my_data()[complete.cases(my_data()),]
     }
-    if (input$cor_data == "outliers removed") {
+    if (input$cor_data == "r2 fitted curves curated data") {
+      cor_data_type <- good_r2()
+    }
+    if (input$cor_data == "r2 fitted curves curated data with missing values removed") {
+      cor_data_type <- good_r2()[complete.cases(good_r2()),]
+    }
+    if (input$cor_data == "outliers removed data") {
       cor_data_type <- Outlier_free_data()
     }
     cor_data_type
@@ -3889,15 +4381,21 @@ output$OT_graph_download_ui <- renderUI({
         selectizeInput(
           inputId = "PCA_data",
           label = "Dataset for PCA:",
-          choices = c("raw data", "missing values removed", "outliers removed"), multiple = F))
+          choices= c("raw data", "r2 fitted curves curated data", "missing values removed data", "r2 fitted curves curated data", "r2 fitted curves curated data with missing values removed", "outliers removed data"), selected="raw data", multiple = F))
   })  
   
   PCA_data_type <- eventReactive(input$Go_PCAdata,{
     if(input$PCA_data == "raw data"){
       PCA_data_type <- my_data()
     }
-    if(input$PCA_data == "missing values removed"){
-      PCA_data_type <- my_data_nona()
+    if(input$PCA_data == "missing values removed data"){
+      PCA_data_type <- my_data()[complete.cases(my_data()),]
+    }
+    if(input$PCA_data == "r2 fitted curves curated data"){
+      PCA_data_type <- good_r2()
+    }
+    if(input$PCA_data == "r2 fitted curves curated data with missing values removed"){
+      PCA_data_type <- good_r2()[complete.cases(good_r2()),]
     }
     if(input$PCA_data == "outliers removed"){
       PCA_data_type <- Outlier_free_data()
@@ -4219,21 +4717,28 @@ output$OT_graph_download_ui <- renderUI({
         selectizeInput(
           inputId = "MDS_data",
           label = "Dataset for MDS:",
-          choices = c("raw data", "missing values removed", "outliers removed"), multiple = F))
+          choices= c("raw data", "r2 fitted curves curated data", "missing values removed data", "r2 fitted curves curated data", "r2 fitted curves curated data with missing values removed", "outliers removed data"), selected="raw data", multiple = F))
   }) 
   
+
   MDS_data_type <- eventReactive(input$Go_MDSdata,{
-    if(input$MDS_data == "raw data"){
-      MDS_data_type <- my_data()
-    }
-    if(input$MDS_data == "missing values removed"){
-      MDS_data_type <- my_data_nona()
-    }
-    if(input$MDS_data == "outliers removed"){
-      MDS_data_type <- Outlier_free_data()
-    }
+  if(input$MDS_data == "raw data"){
+    MDS_data_type <- my_data()
+  }
+  if(input$MDS_data == "missing values removed data"){
+    MDS_data_type <- my_data()[complete.cases(my_data()),]
+  }
+  if(input$MDS_data == "r2 fitted curves curated data"){
+    MDS_data_type <- good_r2()
+  }
+  if(input$MDS_data == "r2 fitted curves curated data with missing values removed"){
+    MDS_data_type <- good_r2()[complete.cases(good_r2()),]
+  }
+  if(input$MDS_data == "outliers removed"){
+    MDS_data_type <- Outlier_free_data()
+  }
     MDS_data_type
-  })
+})
   
   output$MDS_raw_table <- renderDataTable({
     MDS_data_type()
@@ -4554,9 +5059,27 @@ output$OT_graph_download_ui <- renderUI({
         selectizeInput(
           inputId = "Cluster_data",
           label = "Dataset for clustering analysis",
-          choices = c("raw data", "missing values removed", "outliers removed"), multiple = F))
+          choices= c("raw data", "r2 fitted curves curated data", "missing values removed data", "r2 fitted curves curated data", "r2 fitted curves curated data with missing values removed", "outliers removed data"), selected="raw data", multiple = F))
   })
   
+  Data_for_cluster <- eventReactive(exists(input$Cluster_data),{
+    if(input$Cluster_data == "raw data"){
+      Data_for_cluster <- my_data()
+    }
+    if(input$Cluster_data == "missing values removed data"){
+      Data_for_cluster <- my_data()[complete.cases(my_data()),]
+    }
+    if(input$Cluster_data == "r2 fitted curves curated data"){
+      Data_for_cluster <- good_r2()
+    }
+    if(input$Cluster_data == "r2 fitted curves curated data with missing values removed"){
+      Data_for_cluster <- good_r2()[complete.cases(good_r2()),]
+    }
+    if(input$Cluster_data == "outliers removed"){
+      Data_for_cluster <- Outlier_free_data()
+    }
+    Data_for_cluster
+  })
   
   output$Select_clustering_method <- renderUI({
     if(is.null(ItemList())){return()}
@@ -4567,6 +5090,7 @@ output$OT_graph_download_ui <- renderUI({
           label = "Clustering method:",
           choices = c("ward.D", "ward.D2", "single", "complete", "average", "mcquitty", "median", "centroid"), multiple = F))
   })   
+
   
   output$Select_data_cluster_validation <- renderUI({
     if(is.null(input$Split_cluster)){
@@ -4583,18 +5107,7 @@ output$OT_graph_download_ui <- renderUI({
     }
   })
   
-  Data_for_cluster <- eventReactive(exists(input$Cluster_data),{
-    if(input$Cluster_data == "raw data"){
-      cluster_data <- my_data()
-    }  
-    if(input$Cluster_data == "missing values removed"){
-      cluster_data <- my_data_nona()
-    }
-    if(input$Cluster_data == "outliers removed"){
-      cluster_data <- Outlier_free_data()
-    }
-    return(cluster_data)
-  })
+ 
   
   output$Data_cluster_table <- renderDataTable({
     test <- Data_for_cluster()
@@ -5193,33 +5706,27 @@ output$OT_graph_download_ui <- renderUI({
         selectizeInput(
           inputId = "KMCluster_data",
           label = "Dataset for clustering analysis",
-          choices = c("raw data", "missing values removed", "outliers removed"), multiple = F))
+          choices= c("raw data", "r2 fitted curves curated data", "missing values removed data", "r2 fitted curves curated data", "r2 fitted curves curated data with missing values removed", "outliers removed data"), selected="raw data", multiple = F))
   })
   
-  output$Select_DV_KMC <- renderUI({
-    if(is.null(ItemList())){return()}
-    else
-      tagList(
-        selectizeInput(
-          inputId = "KMC_pheno",
-          label = "Numerical variables for clustering analysis",
-          choices = c(input$SelectDV),
-          multiple = T
-        ))
-  })
-  
-  
+
   KMC_data_type <- eventReactive(input$Select_data_KMC,{
-    if(input$KMCluster_data == "raw data"){
-      KMC_data_type <- my_data()
-    }
-    if(input$KMCluster_data == "missing values removed"){
-      KMC_data_type <- my_data_nona()
-    }
-    if(input$KMCluster_data == "outliers removed"){
-      KMC_data_type <- Outlier_free_data()
-    }
-    
+  if(input$KMCluster_data == "raw data"){
+    KMC_data_type <- my_data()
+  }
+  if(input$KMCluster_data == "missing values removed data"){
+    KMC_data_type <- my_data()[complete.cases(my_data()),]
+  }
+  if(input$KMCluster_data == "r2 fitted curves curated data"){
+    KMC_data_type <- good_r2()
+  }
+  if(input$KMCluster_data == "r2 fitted curves curated data with missing values removed"){
+    KMC_data_type <- good_r2()[complete.cases(good_r2()),]
+  }
+  if(input$KMCluster_data == "outliers removed"){
+    KMC_data_type <- Outlier_free_data()
+  }
+  
     if(input$KMC_use_means == T){
       #KMC_data_type$id <- do.call(paste,c(KMC_data_type[c(input$SelectGeno, input$SelectIV, input$SelectTime)], sep="_"))
       #final_set <- subset(KMC_data_type, select = c("id", input$KMC_pheno))
@@ -5244,9 +5751,22 @@ output$OT_graph_download_ui <- renderUI({
       #final_set <-KMC_data_type()
       
     }
-    final_set   
+    final_set     
     
+})
+  
+  output$Select_DV_KMC <- renderUI({
+    if(is.null(ItemList())){return()}
+    else
+      tagList(
+        selectizeInput(
+          inputId = "KMC_pheno",
+          label = "Numerical variables for clustering analysis",
+          choices = c(input$SelectDV),
+          multiple = T
+        ))
   })
+  
   
   output$KMC_data_table <- renderDataTable({
     if(is.null(KMC_data_type())){
@@ -5892,15 +6412,22 @@ output$OT_graph_download_ui <- renderUI({
         selectizeInput(
           inputId = "Herit_data",
           label = "Dataset used to calculate heritability:",
-          choices = c("raw data", "missing values removed", "outliers removed"), multiple = F))
+          choices= c("raw data", "r2 fitted curves curated data", "missing values removed data", "r2 fitted curves curated data", "r2 fitted curves curated data with missing values removed", "outliers removed data"), selected="raw data", multiple = F))
   })  
+  
   
   Herit_data_type <- reactive({
     if(input$Herit_data == "raw data"){
       Herit_data_type <- my_data()
     }
-    if(input$Herit_data == "missing values removed"){
-      Herit_data_type <- my_data_nona()
+    if(input$Herit_data == "missing values removed data"){
+      Herit_data_type <- my_data()[complete.cases(my_data()),]
+    }
+    if(input$Herit_data == "r2 fitted curves curated data"){
+      Herit_data_type <- good_r2()
+    }
+    if(input$Herit_data == "r2 fitted curves curated data with missing values removed"){
+      Herit_data_type <- good_r2()[complete.cases(good_r2()),]
     }
     if(input$Herit_data == "outliers removed"){
       Herit_data_type <- Outlier_free_data()
@@ -5998,7 +6525,7 @@ output$OT_graph_download_ui <- renderUI({
   output$HeritValue<-renderPrint({
     heritdata2<-Herit_data_type()
     Repnum<-as.numeric(input$RepID)
-    cat(paste("The number of replicas is",Repnum, sep=":"))
+    cat(paste("The number of replicates is",Repnum, sep=":"))
     cat("\n")
     if(input$herit_facet == F){
       if(input$SelectYear != "none" & input$SelectLocation != "none")  { 
@@ -6275,8 +6802,6 @@ output$OT_graph_download_ui <- renderUI({
     
   })
   
-  
-  
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # - - - - - - - - - - - - - - >>  Quantile Analysis in 10th TAB <<- - - - - - - - - - - - - - - -
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -6288,7 +6813,7 @@ output$OT_graph_download_ui <- renderUI({
         selectizeInput(
           inputId = "data_to_use",
           label = "Dataset to explore:",
-          choices = c("raw data", "missing values removed", "outliers removed"), multiple = F))
+          choices= c("raw data", "r2 fitted curves curated data", "missing values removed data", "r2 fitted curves curated data", "r2 fitted curves curated data with missing values removed", "outliers removed data"), selected="raw data", multiple = F))
   })  
   
   
@@ -6296,8 +6821,14 @@ output$OT_graph_download_ui <- renderUI({
     if(input$data_to_use == "raw data"){
       QA_data <- my_data()
     }
-    if(input$data_to_use == "missing values removed"){
-      QA_data <- my_data_nona()
+    if(input$data_to_use == "missing values removed data"){
+      QA_data <- my_data()[complete.cases(my_data()),]
+    }
+    if(input$data_to_use == "r2 fitted curves curated data"){
+      QA_data <- good_r2()
+    }
+    if(input$data_to_use == "r2 fitted curves curated data with missing values removed"){
+      QA_data <- good_r2()[complete.cases(good_r2()),]
     }
     if(input$data_to_use == "outliers removed"){
       QA_data <- Outlier_free_data()
@@ -6915,16 +7446,189 @@ output$OT_graph_download_ui <- renderUI({
     
   })
   
-  # output$downl_plot_QA <-  
-  #    downloadHandler(
+   output$downl_plot_QA <-  
+      downloadHandler(
   
-  #   filename = function(){paste("Quantile plots MVApp", "pdf" , sep=".") },
-  #  content = function(file) {
-  #    pdf(file)
-  #    print(QA_plot_multi())
-  #    dev.off()
-  #  } 
-  #)  
+     filename = function(){paste("Quantile plots MVApp", "pdf" , sep=".") },
+    content = function(file) {
+      pdf(file)
+      
+      if(input$model_type_plot == "single plot"){
+      temp <-
+        subset(
+          QA_final_data_display(),
+          select = c(
+            input$QA_subset,
+            input$ResponsePheno,
+            input$ExplanatoryPheno
+          )
+        )
+      sub_set <- input$QA_subset
+      things_to_model_QA <- unique(temp[sub_set])
+      tau = c(0.25,0.5,0.75)
+      fit_qr=list()
+      
+      for (i in 1:nrow(things_to_model_QA)) {
+        if(ncol(things_to_model_QA)==1){
+          super_temp <- subset(temp, temp[, 1] == things_to_model_QA[i, 1])
+          
+        } else 
+        {
+          super_temp <- subset(temp, (temp[, 1] == things_to_model_QA[i,1]) & (temp[, 2] == things_to_model_QA[i,2]))
+          
+        } 
+        super_temp2= super_temp[,-c(1:ncol(things_to_model_QA))]
+        colnames(super_temp2)[1]= "y"
+        fit_qr[[i]] <- rq(y ~  . , data = super_temp2, tau = tau)
+        
+      }
+      sub= setdiff(input$QA_subset, input$group_plot_by)
+      
+      if(is_empty(sub)){
+        index=c(1:nrow(things_to_model_QA))
+      }else{
+        index = which( things_to_model_QA[,sub] == input$plot_subset)
+      }
+      
+      listgroupby <- unique(as.matrix(temp[input$group_plot_by]))
+      
+      tau= c(0.25, 0.5, 0.75)
+      
+      pvalues=rep(0, length(tau))
+      plist= list()
+      
+      for(k in 1:nrow(listgroupby)){
+        for(i in 1:length(tau)){
+          pvalues[i]=cbind(coef(summary(fit_qr[[index[k]]],se="boot")[[i]])[input$Model_variable_select, "Pr(>|t|)"])
+        }
+        plist[[k]]= pvalues
+      }
+      
+      coeffi=matrix(0,nrow(listgroupby),length(tau))
+      for(i in 1:nrow(listgroupby)){
+        coeffi[i,]=coef(fit_qr[[index[i]]])[input$Model_variable_select,] 
+      }
+      
+      col= rainbow(nrow(listgroupby))
+      
+      par(mar=c(5.1, 4.1, 4.1, 8.1), xpd=TRUE)
+      plot(tau,coef(fit_qr[[index[1]]])[input$Model_variable_select,],
+           pch=ifelse(plist[[1]]< as.numeric(as.character(input$p_value_threshold)) ,20,4),
+           col=ifelse(plist[[1]]< as.numeric(as.character(input$p_value_threshold)) ,col[1],"black"),
+           cex=1.5, xlab = "Quantiles", ylab = "Coefficient",
+           cex.main=1.5, cex.lab=1.5, main=input$Model_variable_select,
+           ylim=c(min(coeffi), max(coeffi)))
+      
+      lines(tau,coef(fit_qr[[index[1]]])[input$Model_variable_select,],col=col[1], cex=1.5)
+      
+      for(k in 2:nrow(listgroupby)){
+        points (tau,coef(fit_qr[[index[k]]])[input$Model_variable_select,],
+                col=ifelse(plist[[k]]< as.numeric(as.character(input$p_value_threshold)) ,col[k],"black"),
+                pch=ifelse(plist[[k]]<as.numeric(as.character(input$p_value_threshold)) ,20,4),cex=1.5)
+        lines (tau,coef(fit_qr[[index[k]]])[input$Model_variable_select,],col=col[k],cex=1.5)
+      }
+      
+      legend("topright",inset=c(-0.32,0),legend=c(listgroupby,"Not significant"),horiz = F,pch = c(20,20,4),col = c(col,"black"),
+             bty = "n",xpd=NA,cex=1)
+      }
+      
+      if(input$model_type_plot == "multiple plots"){
+        temp <-
+          subset(
+            QA_final_data_display(),
+            select = c(
+              input$QA_subset,
+              input$ResponsePheno,
+              input$ExplanatoryPheno
+            )
+          )
+        sub_set <- input$QA_subset
+        things_to_model_QA <- unique(temp[sub_set])
+        tau = c(0.25,0.5,0.75)
+        fit_qr=list()
+        
+        for (i in 1:nrow(things_to_model_QA)) {
+          if(ncol(things_to_model_QA)==1){
+            super_temp <- subset(temp, temp[, 1] == things_to_model_QA[i, 1])
+            
+          } else 
+          {
+            super_temp <- subset(temp, (temp[, 1] == things_to_model_QA[i,1]) & (temp[, 2] == things_to_model_QA[i,2]))
+            
+          } 
+          super_temp2= super_temp[,-c(1:ncol(things_to_model_QA))]
+          colnames(super_temp2)[1]= "y"
+          fit_qr[[i]] <- rq(y ~  . , data = super_temp2, tau = tau)
+          
+        }
+        
+        sub= setdiff(input$QA_subset, input$group_plot_by)
+        if(is_empty(sub)){
+          index=c(1:nrow(things_to_model_QA))
+        }else{
+          index = which( things_to_model_QA[,sub] == input$plot_subset)
+        }    
+        
+        listgroupby <- unique(as.matrix(temp[input$group_plot_by]))
+        
+        tau= c(0.25, 0.5, 0.75)
+        
+        pvalues=rep(0, length(tau))
+        plist= list()
+        
+        
+        temp_expl <- subset(
+          QA_final_data_display(),
+          select = c(
+            input$ExplanatoryPheno
+          )
+        )
+        expl= colnames(temp_expl)
+        
+        par(mfrow=c(2,2))
+        var = min(length(expl), input$QA_plot_slider+3)
+        for(j in input$QA_plot_slider:var){
+          
+          for(k in 1:nrow(listgroupby)){
+            for(i in 1:length(tau)){
+              pvalues[i]=cbind(coef(summary(fit_qr[[index[k]]],se="boot")[[i]])[expl[j], "Pr(>|t|)"])
+            }
+            plist[[k]]= pvalues
+          }
+          
+          coeffi=matrix(0,nrow(listgroupby),length(tau))
+          for(i in 1:nrow(listgroupby)){
+            coeffi[i,]=coef(fit_qr[[index[i]]])[expl[j],] 
+          }
+          
+          col= rainbow(nrow(listgroupby))
+          
+          par(mar=c(5.1, 4.1, 4.1, 8.1), xpd=TRUE)
+          plot(tau,coef(fit_qr[[index[1]]])[expl[j],],
+               pch=ifelse(plist[[1]]<as.numeric(as.character(input$p_value_threshold)) ,20,4),
+               col=ifelse(plist[[1]]<as.numeric(as.character(input$p_value_threshold)) ,col[1],"black"),
+               cex=1.5, xlab = "Quantiles", ylab = "Coefficient",
+               cex.main=1.5, cex.lab=1.5, main=expl[j],
+               ylim=c(min(coeffi), max(coeffi)))
+          
+          lines(tau,coef(fit_qr[[index[1]]])[expl[j],],col=col[1], cex=1.5)
+          
+          for(k in 2:nrow(listgroupby)){
+            points (tau,coef(fit_qr[[index[k]]])[expl[j],],
+                    col=ifelse(plist[[k]]< as.numeric(as.character(input$p_value_threshold)) ,col[k],"black"),
+                    pch=ifelse(plist[[k]]<0.05 ,20,4),cex=1.5)
+            lines (tau,coef(fit_qr[[index[k]]])[expl[j],],col=col[k],cex=1.5)
+          }
+          
+          legend("topright",inset=c(-0.8,0),legend=c(listgroupby,"Not significant"),horiz = F,pch = c(20,20,4),col = c(col,"black"),
+                 bty = "n",xpd=NA,cex=1)
+          
+        }
+      }
+      
+      dev.off()
+    } 
+  )  
   
   output$QA_plot <- renderPlot({
     if(input$model_type_plot == "single plot"){
@@ -6936,7 +7640,6 @@ output$OT_graph_download_ui <- renderUI({
     }
     
   })
-  
   
   
   # end of the script

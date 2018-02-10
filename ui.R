@@ -16,7 +16,7 @@ fluidPage(
         "Our background is plant biology - so you know where our bias is ;).",br(),br(),
         "The app is not published anywhere (yet - we are working on it), but if you wish to cite the app, please use the following:",
         br(), br(),
-        "Julkowska, M.M., Saade, S., Aragwal, G., Gao, G., Morton, M.J.L., Awlia, M., Paillies, Y., Tester, M., MVApp.pre-release_v2.0 mmjulkowska/MVApp: MVApp.pre-release_v2.0, DOI: 10.5281/zenodo.1067974",
+        "Julkowska, M.M., Saade, S., Agarwal, G., Gao, G., Morton, M.J.L., Awlia, M., Paillies, Y., Tester, M., MVApp.pre-release_v2.0 mmjulkowska/MVApp: MVApp.pre-release_v2.0, DOI: 10.5281/zenodo.1067974",
         br(), br(),
         "The example dataset is available ", a("here", href = "https://drive.google.com/file/d/0B08MX6N7rXcZX0xQamtweUZCbDQ/view?usp=sharing", target = "_blank"),br(), br(),
         "If you have any problems / questions / ", span("suggestions how we can improve this APP so that YOU can do your analysis smoother", style="color:red") ,"- or simply you would like to tell us how amazing the App is - please contact ",span("Magdalena.Julkowska@kaust.edu.sa", style="color:blue")
@@ -129,14 +129,17 @@ fluidPage(
                                   dataTableOutput("Model_estimation"), 
                                   verbatimTextOutput("model_warning"),
                                   uiOutput("Model_download_button"),
-                                  dataTableOutput("Model_data")),
+                                  dataTableOutput("Model_data"),
+                                  uiOutput("Download_good_r2_table_button"),
+                                  checkboxInput("Remove_samples_based_on_r2", label = "Lock the data with removed outliers based on poor r2 fit (< 0.7) for further analysis"),
+                                  dataTableOutput("Good_r2_table")),
                          tabPanel("Fit-Plot",
-                                  column(4, uiOutput("Select_model_plot_type")),
+                                  column(4, uiOutput("Select_model_plot_type"),
+                                         uiOutput("Go_fitplot_model"),
+                                            uiOutput("Model_fit_graph_download_button")),
                                   column(4, uiOutput("Select_modelPlot")),
                                   column(4, uiOutput("Model_graph_fit_select_multi_input")),
                                   column(4, uiOutput("Fit_plot_slider_input")),
-                                  
-                                  uiOutput("Go_fitplot_model"),
                                   plotOutput("Fit_plot_only_graph",height = 750)),
                          tabPanel("Examine differences",
                                   verbatimTextOutput("model_comparison_report"),
@@ -170,6 +173,7 @@ fluidPage(
               ))
             # end of Tab3
    ),
+   
    # Tab 4 = = = = = = = = = = = = = = >> DATA CURATION << = = = = = = = = = = = = = = = = = =   
    
    tabPanel("Data curation", icon = icon("gavel"),
@@ -177,10 +181,11 @@ fluidPage(
               fluidRow(
                 navbarPage("",
                            tabPanel("Outlier selection",            
-                                    checkboxInput("Go_omitna", label = "Remove rows containing missing data prior to outlier selection"),
+                                    selectizeInput("Outlier_on_data", label = "Use the following dataset for outlier selelction", 
+                                                   choices =c("raw data", "r2 fitted curves curated data", "missing values removed data", "r2 fitted and missing values removed data")),
                                     br(),
                                     uiOutput("IV_outliers_selection"),
-                                    selectizeInput("Out_pheno_single_multi", label = "Select outliers based on", choices=c("All phenotypes", "Single phenotype"), multiple = F),
+                                    selectizeInput("Out_pheno_single_multi", label = "Select outliers based on", choices=c("All phenotypes", "Some phenotypes", "Single phenotype"), multiple = F),
                                     
                                     selectizeInput("outlier_method", label="Method for the outlier selection", 
                                                    choices = list(
@@ -193,6 +198,7 @@ fluidPage(
                                                      "3xStDev from the median" 
                                                    ), multiple = F),
                                     br(),
+                                    selectInput("What_happens_to_outliers", label = "Points identified as outliers:", choices = c("replaced by NA", "removed together with entire row")),
                                     uiOutput("Pheno_outliers"),
                                     uiOutput("Outliers_selection_pheno"),
                                     br(),
@@ -253,7 +259,6 @@ fluidPage(
               ))
             # end of Tab#4         
    ), 
-   
 
 # Tab 5 = = = = = = = = = = = = = = >> DATA EXPLORATION << = = = = = = = = = = = = = = = = = =    
 
@@ -606,7 +611,8 @@ tabPanel("Heritability", icon=icon("pagelines"),
 ),                           
 
 # Tab 10 = = = = = = = = = = = = = = >> QUANTILE ANALYSIS << = = = = = = = = = = = = = = = = = = 
-tabPanel("Quantile Analysis", icon = icon("sun-o"),
+
+tabPanel("Quantile regression", icon = icon("paper-plane-o"),
          sidebarPanel(
            fluidRow(
              uiOutput("QA_data_type"),
