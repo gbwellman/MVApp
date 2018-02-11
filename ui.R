@@ -352,6 +352,8 @@ tabPanel("Correlations",
       sidebarPanel(
         uiOutput("cor_Pheno_data"),
         # which data set to use (summarized / na / original) selectize, multiple = F
+        uiOutput("cor_phenos",lable = "Choose nummeric variables from your data for correlation analysis"),
+        # which data set to use (summarized / na / original) selectize, multiple = F
         checkboxInput("cor_data_subset", label = "Subset your data for correlation analysis?"),
         uiOutput("cor_subset"),
         uiOutput("CorSpecIV_val"),
@@ -375,7 +377,7 @@ tabPanel("Correlations",
     ),
     tabPanel(
       "Scatterplots",
-      sidebarPanel(uiOutput("Pheno1"), uiOutput("Pheno2"), uiOutput("colorby")),
+      sidebarPanel(uiOutput("Pheno1"), uiOutput("Pheno2"), uiOutput("colorby"), uiOutput("shapeby")),
       mainPanel(
         textOutput("corrsq"),
         textOutput("corpval"),

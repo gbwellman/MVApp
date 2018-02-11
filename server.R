@@ -3396,7 +3396,9 @@ output$OT_graph_download_ui <- renderUI({
   ######################### correlation plot#############################
   
   # select data sets to be used
-  output$cor_Pheno_data <- renderUI({
+ 
+  
+ output$cor_Pheno_data <- renderUI({
     if (is.null(ItemList())) {
       return()
     }
@@ -3410,6 +3412,22 @@ output$OT_graph_download_ui <- renderUI({
         )
       )
   })
+  
+  output$cor_phenos <- renderUI({
+    if (is.null(ItemList())) {
+      return ()
+    } else
+      tagList(
+        selectizeInput(
+          inputId = "Select_cor_phenos",
+          label = "Choose from your dependent variables to be plotted",
+          choices = input$SelectDV,
+          multiple = T
+        )
+      )
+  })
+  
+  
   
   cor_data_type <- eventReactive(input$cor_data, {
     if (input$cor_data == "raw data") {
@@ -3477,31 +3495,23 @@ output$OT_graph_download_ui <- renderUI({
   })
   
   COR_BIG <- reactive({
-  
-    df <- cor_data_type()
-    
+    req(input$Select_cor_phenos)
+    df0<- subset(cor_data_type(),select= input$Select_cor_phenos)
+    df <- subset(cor_data_type(), 
+                 select = c(
+                   input$SelectGeno,
+                   input$SelectIV,
+                   input$SelectID,
+                   input$SelectTime,
+                   input$Select_cor_phenos))
+                 
     if (input$cor_data_subset) {
-      df <- df[df[input$CorIV_sub] == input$CorIV_val, ]
+      df0 <- subset(df[df[input$CorIV_sub] == input$CorIV_val, ],select=input$Select_cor_phenos)
     }
-    
-    beginCol <-
-      length(c(
-        input$SelectIV,
-        input$SelectGeno,
-        input$SelectTime,
-        input$SelectID
-      )) + 1
-    endCol <-
-      length(c(
-        input$SelectIV,
-        input$SelectGeno,
-        input$SelectTime,
-        input$SelectID
-      )) + length(input$SelectDV)
     
     if(input$cor_sig_show == F){
     corrplot(
-      cor(df[, beginCol:endCol], method = input$corMethod),
+      cor(df0, method = input$corMethod),
       method = input$corrplotMethod,
       type = input$corType,
       order = input$corOrder,
@@ -3510,11 +3520,10 @@ output$OT_graph_download_ui <- renderUI({
     
     if(input$cor_sig_show == T){
       thres <- as.numeric(as.character(input$cor_sig_threshold))
-      res1 <- cor.mtest(df[, beginCol:endCol], conf.level = (1-thres))
-      
+      res1 <- cor.mtest(df0, conf.level = (1-thres))
       
       corrplot(
-        cor(df[, beginCol:endCol], method = input$corMethod),
+        cor(df0, method = input$corMethod),
         p.mat = res1$p,
         sig.level = thres,
         
@@ -3534,31 +3543,14 @@ output$OT_graph_download_ui <- renderUI({
     filename = function(){paste("Correlation plot with ", input$corrplotMethod,", ", input$corType, " and ordered with ", input$corOrder, " MVApp.pdf")},
     content = function(file) {
       pdf(file)
-      df <- cor_data_type()
-      
+      df <- subset(cor_data_type(), select = input$Select_cor_phenos)
       if (input$cor_data_subset) {
         df <- df[df[input$CorIV_sub] == input$CorIV_val, ]
       }
       
-      beginCol <-
-        length(c(
-          input$SelectIV,
-          input$SelectGeno,
-          input$SelectTime,
-          input$SelectID
-        )) + 1
-      endCol <-
-        length(c(
-          input$SelectIV,
-          input$SelectGeno,
-          input$SelectTime,
-          input$SelectID
-        )) + length(input$SelectDV)
-      
-      
       if(input$cor_sig_show == F){
        biggie <- corrplot(
-          cor(df[, beginCol:endCol], method = input$corMethod),
+          cor(df, method = input$corMethod),
           method = input$corrplotMethod,
           type = input$corType,
           order = input$corOrder,
@@ -3567,11 +3559,11 @@ output$OT_graph_download_ui <- renderUI({
       
       if(input$cor_sig_show == T){
         thres <- as.numeric(as.character(input$cor_sig_threshold))
-        res1 <- cor.mtest(df[, beginCol:endCol], conf.level = (1-thres))
+        res1 <- cor.mtest(df, conf.level = (1-thres))
         
         
        biggie <- corrplot(
-          cor(df[, beginCol:endCol], method = input$corMethod),
+          cor(df, method = input$corMethod),
           p.mat = res1$p,
           sig.level = thres,
           
@@ -3587,31 +3579,38 @@ output$OT_graph_download_ui <- renderUI({
   
   ################ cor_table output###################
   
+  # output$cor_lineplot <- renderPlot({
+  #   df <- cor_data_type()
+  #   
+  #   make_cor_by_iv <- function(df, iv, dv) {
+  #     vals <- df[iv] %>% unique()
+  #     lst <- lapply(vals, function(x) {
+  #       df %>% filter() select(dv)
+  #     })
+  #   }
+  #   df %>% group_by(input$CorIV_sub) %>% select(input$SelectDV) %>% cor()
+  #   
+  # })
+  
+  ################# correlation table display #################
+  
   output$cor_table <- renderDataTable({
-    beginCol <-
-      length(c(
-        input$SelectIV,
-        input$SelectGeno,
-        input$SelectTime,
-        input$SelectID
-      )) + 1
-    
-    endCol <-
-      length(c(
-        input$SelectIV,
-        input$SelectGeno,
-        input$SelectTime,
-        input$SelectID
-      )) + length(input$SelectDV)
-    
-    df <- cor_data_type()
+    req(input$Select_cor_phenos)
+    df<- subset(cor_data_type(),select= input$Select_cor_phenos)
+    df0 <- subset(cor_data_type(), 
+                 select = c(
+                   input$SelectGeno,
+                   input$SelectIV,
+                   input$SelectID,
+                   input$SelectTime,
+                   input$Select_cor_phenos))
     
     if (input$cor_data_subset) {
-      df <- df[df[input$CorIV_sub] == input$CorIV_val, ]
+      df <- subset(df0[df0[input$CorIV_sub] == input$CorIV_val, ],select=input$Select_cor_phenos)
     }
+
     
-    res <-
-      rcorr(as.matrix(df[, beginCol:endCol]), type = input$corMethod)
+    res <- rcorr(as.matrix(df), type = input$corMethod)
     
     flattenCorrMatrix <- function(cormat, pmat) {
       ut <- upper.tri(cormat)
@@ -3633,6 +3632,7 @@ output$OT_graph_download_ui <- renderUI({
     test
   })
   
+##### help text above the table ################  
   output$cor_table_text <- renderPrint({
     if(input$cor_data_subset == F){
       cat(paste("The", input$corMethod, "correlation coefficients and p values of your data are:"))
@@ -3642,6 +3642,7 @@ output$OT_graph_download_ui <- renderUI({
     }
   })
   
+########### download button ####################################  
   output$cortable_button <- renderUI({
     if (is.null(ItemList())) {
       return()
@@ -3655,30 +3656,21 @@ output$OT_graph_download_ui <- renderUI({
     filename = paste("Correlation table using ", input$corrplotMethod, " subsetted per ", input$CorIV_val, " MVApp.csv"),
     content <- function(file) {
       
-      beginCol <-
-        length(c(
-          input$SelectIV,
-          input$SelectGeno,
-          input$SelectTime,
-          input$SelectID
-        )) + 1
-      
-      endCol <-
-        length(c(
-          input$SelectIV,
-          input$SelectGeno,
-          input$SelectTime,
-          input$SelectID
-        )) + length(input$SelectDV)
-      
-      df <- cor_data_type()
+      req(input$Select_cor_phenos)
+      df<- subset(cor_data_type(),select= input$Select_cor_phenos)
+      df0 <- subset(cor_data_type(), 
+                    select = c(
+                      input$SelectGeno,
+                      input$SelectIV,
+                      input$SelectID,
+                      input$SelectTime,
+                      input$Select_cor_phenos))
       
       if (input$cor_data_subset) {
-        df <- df[df[input$CorIV_sub] == input$CorIV_val, ]
+        df <- subset(df0[df0[input$CorIV_sub] == input$CorIV_val, ],select=input$Select_cor_phenos)
       }
       
-      res <-
-        rcorr(as.matrix(df[, beginCol:endCol]), type = input$corMethod)
+      res <- rcorr(as.matrix(df[, beginCol:endCol]), type = input$corMethod)
       
       flattenCorrMatrix <- function(cormat, pmat) {
         ut <- upper.tri(cormat)
@@ -3691,42 +3683,22 @@ output$OT_graph_download_ui <- renderUI({
       }
       
       result <- flattenCorrMatrix(res$r, res$P)
-      
       write.csv(result, file)}
   )
   
-  
-  
+########################### top table showing r variability ###################
   output$tricky_table <- renderPrint({
-    
     if(input$cor_data_subset == F){
       cat("")
     }
     else{
-  beginCol <-
-    length(c(
-      input$SelectIV,
-      input$SelectGeno,
-      input$SelectTime,
-      input$SelectID
-    )) + 1
-  
-  endCol <-
-    length(c(
-      input$SelectIV,
-      input$SelectGeno,
-      input$SelectTime,
-      input$SelectID
-    )) + length(input$SelectDV)
+
   
   df <- cor_data_type()
-  
   list <- unique(df[,input$CorIV_sub])
-  
   df2 <- subset(df, df[,input$CorIV_sub] == list[1])
-  
-  res <-
-    rcorr(as.matrix(df2[, beginCol:endCol]), type = input$corMethod)
+  df3 <- subset(df2,select= input$Select_cor_phenos)
+  res <- rcorr(as.matrix(df3), type = input$corMethod)
   
   flattenCorrMatrix <- function(cormat, pmat) {
     ut <- upper.tri(cormat)
@@ -3744,9 +3716,8 @@ output$OT_graph_download_ui <- renderUI({
   
   for(i in 2:length(list)){
     df2 <- subset(df, df[,input$CorIV_sub] == list[i])
-    
-    res <-
-      rcorr(as.matrix(df2[, beginCol:endCol]), type = input$corMethod)
+    df3 <- subset(df2,select= input$Select_cor_phenos)
+    res <- rcorr(as.matrix(df3), type = input$corMethod)
     
     flattenCorrMatrix <- function(cormat, pmat) {
       ut <- upper.tri(cormat)
@@ -3830,11 +3801,26 @@ output$OT_graph_download_ui <- renderUI({
       )
   })
   
+  output$shapeby <- renderUI({
+    if ((is.null(input$SelectIV)) |
+        (input$SelectGeno == FALSE)) {
+      return ()
+    } else
+      tagList(
+        selectizeInput(
+          inputId = "Shape",
+          label = "Shape the plot by:",
+          choices = c(input$SelectIV, input$SelectGeno, input$SelectTime),
+          multiple = F
+        )
+      )
+  })
+  
   scatter_cor <- reactive({
     my_data <- data.frame(my_data())
     my_data[,input$Color] <- as.factor(my_data[,input$Color])
-    my_data %>% ggplot(aes_string(input$Pheno1, input$Pheno2)) + geom_point(aes_string(colour =
-                                                                                         input$Color)) +  theme_minimal()
+    my_data[,input$Shape] <- as.factor(my_data[,input$Shape])
+    my_data %>% ggplot(aes_string(input$Pheno1, input$Pheno2)) + geom_point(aes_string(colour =input$Color,shape=input$Shape)) +  theme_minimal()
   })
   
   output$scatterplot <- renderPlotly({
