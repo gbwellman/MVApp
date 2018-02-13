@@ -5710,7 +5710,7 @@ output$OT_graph_download_ui <- renderUI({
   })
   
 
-  KMC_data_type <- eventReactive(input$Select_data_KMC,{
+  KMC_data_type <- reactive({
   if(input$KMCluster_data == "raw data"){
     KMC_data_type <- my_data()
   }
@@ -6127,7 +6127,7 @@ output$OT_graph_download_ui <- renderUI({
       tagList(
         checkboxInput(
           inputId = "KMC_split_barplot",
-          label = "Split the graph?"))
+          label = "Would you like to facet/split the barplot?"))
   })
   
   output$Select_KMC_facet_barplot <- renderUI({
@@ -6150,8 +6150,8 @@ output$OT_graph_download_ui <- renderUI({
         selectizeInput(
           inputId = "Select_KMC_barplot_sc",
           label = "Scale of the split barplot",
-          choices = c("fixed", "free"),
-          selected = "fixed"
+          choices = c("fixed", "free","free_x","free_y"),
+          selected = "free_x"
         ))
     
   })
@@ -6213,16 +6213,24 @@ output$OT_graph_download_ui <- renderUI({
       df <- barplotData()
       df$cluster <-as.factor(df$cluster)
       #df<-d[order(-d[,input$KMC_trait_to_plot]),]
+      if(input$KMC_split_barplot == F){
       p <- ggplot(df, aes(x =reorder(id,-df[,input$KMC_trait_to_plot])  , y = df[,input$KMC_trait_to_plot], fill = cluster) )+ 
         geom_bar(stat="identity")+xlab(" ") +ylab(" ") +
-        theme(axis.text.x = element_text(angle = 90, hjust = 1))
+        theme(axis.text.x = element_text(angle = 90, hjust = 1))}
       if(input$KMC_split_barplot == T){
-        p<-p + facet_wrap(~ df[,input$facet_KMC_barplot], scale = input$Select_KMC_barplot_sc)}
+        #df2=df[with(df, order(-z, b)), ]
+        df<- df %>%
+          ungroup() %>%
+          arrange(df[,input$facet_KMC_barplot],-df[,input$KMC_trait_to_plot]) %>%
+          mutate(.r=row_number())
+        p <- ggplot(df, aes(x =.r,y = df[,input$KMC_trait_to_plot], fill = cluster) )+ 
+          geom_bar(stat="identity")+xlab(" ") +ylab(" ") +
+          theme(axis.text.x = element_text(angle = 90, hjust = 1))
+        p<-p + facet_wrap(~ df[,input$facet_KMC_barplot], scale = input$Select_KMC_barplot_sc)+ scale_x_continuous(breaks=df$.r,labels=df$id)}
       if(input$Select_KMC_background_barplot == T){
-        p <- p + theme_minimal()}
+        p <- p + theme_minimal()+theme(axis.text.x = element_text(angle = 90, hjust = 1))}
       if(input$Select_KMC_grid_barplot == T){
         p <- p + theme(axis.text.x = element_text(angle = 90, hjust = 1),panel.grid.major = element_blank())}
-      
     }
     if(input$KMC_use_means == F){
       df <- barplotData()
@@ -6310,7 +6318,7 @@ output$OT_graph_download_ui <- renderUI({
       tagList(
         checkboxInput(
           inputId = "KMC_split_scatterplot",
-          label = "Split the graph?"))
+          label = "Would you like to facet/split the scatterplot?"))
   })
   
   output$Select_KMC_facet_to_plot <- renderUI({
@@ -6363,7 +6371,7 @@ output$OT_graph_download_ui <- renderUI({
     df <- barplotData()
     df$cluster <-as.factor(df$cluster)
     p <- ggplot(df, aes(x = df[,input$xcol_kmeans], y = df[,input$ycol_kmeans], color = cluster)) + 
-      geom_point()+
+      geom_point(aes(text=id))+
       xlab(input$xcol_kmeans) +ylab(input$ycol_kmeans) 
     if(input$KMC_split_scatterplot == T){
       p<- p+ facet_wrap(~ df[,input$facet_KMC_plot], scale = input$Select_KMC_facet_sc)}

@@ -522,7 +522,7 @@ tabPanel("Clustering", icon = icon("sitemap"),
                           uiOutput("Select_DV_KMC"),
                           checkboxInput(inputId = "KMCluster_scale_Q", label = "Scale the data prior to clustering"),
                           checkboxInput("KMC_use_means", label = "Perform K-means cluster analysis on mean values?"),
-                          actionButton(inputId= "Select_data_KMC", label = "Set the dataset"),
+                          #actionButton(inputId= "Select_data_KMC", label = "Set the dataset"),
                           br(),br(),
                           actionButton(inputId="Go_KMClustering_advise", label = "Unleash optimal cluster number estimation"),
                           hr(),
@@ -534,24 +534,42 @@ tabPanel("Clustering", icon = icon("sitemap"),
                         
              mainPanel(
                           navbarPage("KMC",
+                                     tabPanel("Selected dataset",
+                                              uiOutput("KmeanData_download_button"),
+                                              dataTableOutput("KMC_data_table")
+                                              ),
+                                      tabPanel("Final data for K-means",
+                                              dataTableOutput("KMCluster_test")
+                                              ),
+
                                      tabPanel("Optimal number of clusters",
-                                              dataTableOutput("KMC_data_table"),
-                                              verbatimTextOutput("indices_majority_KMC"),
-                                              #dataTableOutput("KMCluster_test"),
-                                              column(12,  uiOutput("downl_indices_plots_KMC_3_ui"),
-                                                          plotOutput("indices_plots_KMC_3")),
+                                              p("Estimation of the optimal number of clusters for k-means clustering can be done through various different methods. More than thirty indices and methods have been published. 
+The most commonly used are the elbow method and the silhouette method. Both are graphical methods where the angle in the plot indicates the suggested number of clusters. 
+
+The elbow method consists in plotting the total intra-cluster variation or total within-cluster sum of square (WSS) as a function of the number of clusters. The optimal number of clusters is that where adding another cluster does not improve much the compactness of the clustering as defined by total WSS.
+
+The average silhouette of the data is…
+
+Besides the elbow and silhouette method, 30 more indices are computed and the results are reported below suggesting the best number of clusters using the “majority rule”. Two of these indices are also graphical estimations: Hubert index and D index, explained below."),
+                               h3("Graphical methods", align = "center"),
                                               column(6, uiOutput("downl_elbow_graph_KMC_ui"),
                                                         plotOutput("elbow_graph_KMC")),
                                               column(6, uiOutput("downl_silhouette_graph_KMC_ui"),
-                                                        plotOutput("silhouette_graph_KMC"))
+                                                        plotOutput("silhouette_graph_KMC")),
                                               #plotOutput("gapstat_graph_KMC"),
                                              # This worked with Yveline but isnt working now - dont know why - I ll hash it for now 
-                                              # column(12,uiOutput("downl_indices_plots_KMC_1_ui"),
-                                             #           plotOutput("indices_plots_KMC_1")),
-                                              # column(12, uiOutput("downl_indices_plots_KMC_2_ui"),
-                                              #            plotOutput("indices_plots_KMC_2"))
+                                              h5("Hubert index ***", align = "center"),
+                                              column(12,uiOutput("downl_indices_plots_KMC_1_ui"),
+                                                        plotOutput("indices_plots_KMC_1")),
+                                              h5("D index ***", align = "center"),
+                                               column(12, uiOutput("downl_indices_plots_KMC_2_ui"),
+                                                          plotOutput("indices_plots_KMC_2")),
+                                              verbatimTextOutput("indices_majority_KMC"),
+                                              #dataTableOutput("KMCluster_test"),
+                                              column(12,  uiOutput("downl_indices_plots_KMC_3_ui"),
+                                                          plotOutput("indices_plots_KMC_3"))
                                      ),
-                                     tabPanel("K means clustering results",
+                                     tabPanel("K means clustering barplots",
                                               column(4, uiOutput("Select_KMC_trait")),
                                               column(4, uiOutput("facet_barplot_of_KMC"),
                                                         uiOutput("Select_KMC_facet_barplot")),
@@ -562,7 +580,9 @@ tabPanel("Clustering", icon = icon("sitemap"),
                                                         uiOutput("Select_KMC_grid_barplot")),
                                               column(12,uiOutput("downl_kmeans_barplots_ui")),
                                               column(12,plotlyOutput("kmeans_barplots")),
-                                              hr(),
+                                              hr()
+                                              ),
+                                      tabPanel("K-means clustering scatter plots",
                                               column(4,uiOutput("xcol_kmeans_scatter"),
                                                        uiOutput("ycol_kmeans_scatter")),
                                               column(4,uiOutput("facet_scatterplot_of_KMC"),
@@ -572,7 +592,9 @@ tabPanel("Clustering", icon = icon("sitemap"),
                                                        uiOutput("Select_KMC_grid_to_plot")),
                                               #dataTableOutput("KMC_test2"),
                                               column(12, uiOutput("downl_kmeans_scatter_plot_ui")),
-                                              column(12,plotlyOutput("kmeans_scatter_plot")),
+                                              column(12,plotlyOutput("kmeans_scatter_plot"))
+                                              ),
+                                      tabPanel("K-means clustering data table",
                                               column(12,uiOutput("downl_KMC_test_ui")),
                                               dataTableOutput("KMC_test")
                                      )
@@ -582,6 +604,7 @@ tabPanel("Clustering", icon = icon("sitemap"),
                                      #   plotOutput("kmcANOVA"),
                                      #   hr(),
                                      #     column(4, uiOutput("Select_data_cluster_validation")))
+                                     
                                      
                           ))         
                ))
