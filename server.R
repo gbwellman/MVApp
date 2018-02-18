@@ -6848,7 +6848,7 @@ output$OT_graph_download_ui <- renderUI({
       tagList(
         selectizeInput(
           inputId = "ResponsePheno",
-          label = "Select Phenotype to be used as Response Variable",
+          label = "Select trait to be used as Response Variable",
           choices = c(input$SelectDV),
           multiple = F
         )
@@ -6860,7 +6860,7 @@ output$OT_graph_download_ui <- renderUI({
     tagList(
       selectizeInput(
         inputId = "QA_subset",
-        label = "Independent Variables to subset the data",
+        label = "Subset the data by:",
         choices=c(input$SelectGeno, input$SelectIV, input$SelectTime),
         multiple=T,
         options = list(maxItems = 2)
@@ -6875,7 +6875,7 @@ output$OT_graph_download_ui <- renderUI({
       tagList(
         selectizeInput(
           inputId = "ExplanatoryPheno",
-          label = "Select Phenotype(s) to be used as explanatory variables",
+          label = "Select trait(s) to be used as explanatory variables",
           choices = setdiff(input$SelectDV, input$ResponsePheno),
           multiple = T
         )
@@ -7315,7 +7315,7 @@ output$OT_graph_download_ui <- renderUI({
       lines (tau,coef(fit_qr[[index[k]]])[input$Model_variable_select,],col=col[k],cex=1.5)
     }
     
-    legend("topright",inset=c(-0.15,0),legend=c(listgroupby,"Not significant"),horiz = F,pch = c(20,20,4),col = c(col,"black"),
+    legend("topright",inset=c(-0.17,0),legend=c(listgroupby,"Not significant"),horiz = F,pch = c(20,20,4),col = c(col,"black"),
            bty = "n",xpd=NA,cex=1)
     
   })
@@ -7439,13 +7439,28 @@ output$OT_graph_download_ui <- renderUI({
         lines (tau,coef(fit_qr[[index[k]]])[expl[j],],col=col[k],cex=1.5)
       }
       
-      legend("topright",inset=c(-0.3,0),legend=c(listgroupby,"Not significant"),horiz = F,pch = c(20,20,4),col = c(col,"black"),
+      legend("topright",inset=c(-0.32,0),legend=c(listgroupby,"Not significant"),horiz = F,pch = c(20,20,4),col = c(col,"black"),
              bty = "n",xpd=NA,cex=1)
       
     }
     
   })
   
+  
+  ## plot output
+  output$QA_plot <- renderPlot({
+    if(input$model_type_plot == "single plot"){
+      QA_plot_single()
+    }
+    
+    if(input$model_type_plot == "multiple plots"){
+      QA_plot_multi()
+    }
+    
+  })
+  
+  
+  #### download button for plots
    output$downl_plot_QA <-  
       downloadHandler(
   
@@ -7630,16 +7645,7 @@ output$OT_graph_download_ui <- renderUI({
     } 
   )  
   
-  output$QA_plot <- renderPlot({
-    if(input$model_type_plot == "single plot"){
-      QA_plot_single()
-    }
-    
-    if(input$model_type_plot == "multiple plots"){
-      QA_plot_multi()
-    }
-    
-  })
+
   
   
   # end of the script
