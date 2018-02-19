@@ -3422,7 +3422,8 @@ output$OT_graph_download_ui <- renderUI({
           inputId = "Select_cor_phenos",
           label = "Choose from your dependent variables to be plotted",
           choices = input$SelectDV,
-          multiple = T
+          multiple = T,
+          selected = T
         )
       )
   })
@@ -3539,7 +3540,45 @@ output$OT_graph_download_ui <- renderUI({
     COR_BIG()
   })
   
+   Cor_n <- reactive({
+     req(input$Select_cor_phenos)
+     
+   df <- subset(cor_data_type(),
+                  select = c(
+                    input$SelectGeno,
+                    input$SelectIV,
+                    input$SelectID,
+                    input$SelectTime,
+                    input$Select_cor_phenos))
+  
+     if (input$cor_data_subset) {
+       df0 <- nrow(subset(df[df[input$CorIV_sub] == input$CorIV_val, ],select=input$Select_cor_phenos))
+     }
+      else {df0<- nrow(subset(cor_data_type(),select= input$Select_cor_phenos))}
+   
+   })
+   
+   
+  
+########create corrplot descriptive text###########
+  output$description <- renderText({
+    if(input$cor_data_subset == F){
+      paste("The above figure visulizes the ", input$corMethod, "correlation coefficients of your selected variables ", ", with n = ", Cor_n())
+    }
+    else{
+      paste("The above figure visulizes the ", input$corMethod, "correlation coefficients of your subsetted data in",input$CorIV_sub, "-", input$CorIV_val, ", with n = ", Cor_n())
+    }
+  })
+   
+   
+   output$corrplot_button <- renderUI({
+     req(input$Select_cor_phenos)   
+         downloadButton("download_corrplot", label = "Download Plot")
+   })   
+  
+######### download corrplot##################   
   output$download_corrplot <- downloadHandler(
+  
     filename = function(){paste("Correlation plot with ", input$corrplotMethod,", ", input$corType, " and ordered with ", input$corOrder, " MVApp.pdf")},
     content = function(file) {
       pdf(file)
@@ -3592,11 +3631,17 @@ output$OT_graph_download_ui <- renderUI({
   #   
   # })
   
+  
+  
   ################# correlation table display #################
   
   output$cor_table <- renderDataTable({
     req(input$Select_cor_phenos)
+    if ((input$show_table == FALSE)) {
+      return()
+    } else {
     df<- subset(cor_data_type(),select= input$Select_cor_phenos)
+    
     df0 <- subset(cor_data_type(), 
                  select = c(
                    input$SelectGeno,
@@ -3609,7 +3654,6 @@ output$OT_graph_download_ui <- renderUI({
       df <- subset(df0[df0[input$CorIV_sub] == input$CorIV_val, ],select=input$Select_cor_phenos)
     }
 
-    
     res <- rcorr(as.matrix(df), type = input$corMethod)
     
     flattenCorrMatrix <- function(cormat, pmat) {
@@ -3629,11 +3673,12 @@ output$OT_graph_download_ui <- renderUI({
         test[,i] <- round(test[,i], digits = 4)
       }
     }
-    test
+    test}
   })
   
 ##### help text above the table ################  
   output$cor_table_text <- renderPrint({
+    req(input$show_table== T)
     if(input$cor_data_subset == F){
       cat(paste("The", input$corMethod, "correlation coefficients and p values of your data are:"))
     }
@@ -3648,17 +3693,22 @@ output$OT_graph_download_ui <- renderUI({
       return()
     }
     else{
+      if ((input$show_table == FALSE)) {
+        return()
+      } else {
       downloadButton("cortable_download_button", label = "Download correlation table")
-    }
+    }}
   })
-  
+   
+   
+   ########### download cortable file, error!!! ####################################  
+   
+     
   output$cortable_download_button <- downloadHandler(
     filename = paste("Correlation table using ", input$corrplotMethod, " subsetted per ", input$CorIV_val, " MVApp.csv"),
     content <- function(file) {
       
-      req(input$Select_cor_phenos)
-      df<- subset(cor_data_type(),select= input$Select_cor_phenos)
-      df0 <- subset(cor_data_type(), 
+            df0 <- subset(cor_data_type(), 
                     select = c(
                       input$SelectGeno,
                       input$SelectIV,
@@ -3670,7 +3720,9 @@ output$OT_graph_download_ui <- renderUI({
         df <- subset(df0[df0[input$CorIV_sub] == input$CorIV_val, ],select=input$Select_cor_phenos)
       }
       
-      res <- rcorr(as.matrix(df[, beginCol:endCol]), type = input$corMethod)
+      else {df<- subset(cor_data_type(),select= input$Select_cor_phenos)}
+      
+      res <- rcorr(as.matrix(df), type = input$corMethod)
       
       flattenCorrMatrix <- function(cormat, pmat) {
         ut <- upper.tri(cormat)
@@ -3683,7 +3735,9 @@ output$OT_graph_download_ui <- renderUI({
       }
       
       result <- flattenCorrMatrix(res$r, res$P)
-      write.csv(result, file)}
+      write.csv(result, file)
+      
+    }
   )
   
 ########################### top table showing r variability ###################

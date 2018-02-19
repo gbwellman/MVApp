@@ -364,14 +364,21 @@ tabPanel("Correlations",
         selectInput("corType", "Plot Type:", choices = c("full", "lower", "upper")),
         selectInput("corOrder", "Order the lables by:", choices = list("Original order" = "original","Angular order of eigenvectors" = "AOE", "First Principal Component order"  = "FPC", "Hierarchical clustering order"  = "hclust", "Alphabetical order" = "alphabet")),
         numericInput("Cor_Big_steps", "Number of levels:", value = 10, min = 3, max = 10),
-        selectizeInput("Cor_color_palette", "Palette:", choices = list("Spectral" = "Spectral", "Red-Yellow-Green" = "RdYlGn", "Red-Yellow-Blue" = "RdYlBu", "Red-Grey" = "RdGy", "Red-Blue" = "RdBu", "Purple-Orange" = "PuOr", "Purple-Green" = "PRGn", "Pink-Green" = "PiYG", "Brown-Blue-Green" = "BrBG"))
+        selectizeInput("Cor_color_palette", "Palette:", choices = list("Spectral" = "Spectral", "Red-Yellow-Green" = "RdYlGn", "Red-Yellow-Blue" = "RdYlBu", "Red-Grey" = "RdGy", "Red-Blue" = "RdBu", "Purple-Orange" = "PuOr", "Purple-Green" = "PRGn", "Pink-Green" = "PiYG", "Brown-Blue-Green" = "BrBG")),
         #actionButton("Go_table", label = "Click to see the correlation table with p value", icon = icon("play-circle"))
+        checkboxInput(inputId = "show_table",
+                      label = "Show correlation table",
+                      value = F)
       ),
       mainPanel(
         verbatimTextOutput("tricky_table"),
-        downloadButton("download_corrplot", label="Download Plot"),
+        uiOutput("corrplot_button"),
         plotOutput("corrplot"),
+        br(),
+        textOutput(outputId = "description"),        
+        br(),br(),
         uiOutput("cortable_button"),
+        br(),
         verbatimTextOutput("cor_table_text"),
         dataTableOutput("cor_table"))
     ),
@@ -386,6 +393,11 @@ tabPanel("Correlations",
       )))
   # end of Tab#6
 ),
+
+
+
+
+
 # Tab 7 = = = = = = = = = = = = = = >> PCA ANALYSIS << = = = = = = = = = = = = = = = = = = 
 
 tabPanel("Reduction of dimentionality", icon = icon("object-group"),
