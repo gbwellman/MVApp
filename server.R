@@ -5784,6 +5784,25 @@ output$OT_graph_download_ui <- renderUI({
     }
   })
   
+  # - - - - - >> DOWNLOAD TABLE << - - - - - - - - 
+  
+  
+  output$downl_KMC_data_type <- renderUI({
+    if(is.null(KMC_data_type())){
+      return()}
+    else
+      downloadButton("downl_data_type", label="Download data")
+  })  
+  
+  output$downl_data_type <- downloadHandler(
+    filename = paste("Dataset", input$KMCluster_data, "MVApp.csv"),
+    content <- function(file) {
+      temp <- KMC_data_type()
+      write.csv(temp, file)}
+  )
+  
+  #------------------->> KMC_data_for_matrix <<--------------
+  
   KMC_data_for_matrix <- reactive({
     object <- KMC_data_type()
     if(input$KMC_use_means == T){
@@ -5818,13 +5837,48 @@ output$OT_graph_download_ui <- renderUI({
   })
   
   
-  
+  KMC_data_table_for_matrix <- reactive({
+    object <- KMC_data_type()
+    if(input$KMC_use_means == T){
+      pheno<-paste(input$KMC_pheno,"mean", sep = ".")
+      sel <- subset(object, select=c(input$SelectGeno, input$SelectIV, input$SelectTime, input$SelectID,pheno))
+    }
+    
+    if(input$KMC_use_means == F){
+      
+      sel <- subset(object, select=c(input$SelectGeno, input$SelectIV, input$SelectTime, input$SelectID,input$KMC_pheno))
+      
+    }
+    
+    beginCol <-
+      length(c(
+        input$SelectIV,
+        input$SelectGeno,
+        input$SelectTime,
+        input$SelectID
+      )) + 1
+    
+    endCol <- ncol(sel)
+    
+    for_matrix <- sel[,(beginCol:endCol)]
+    for_matrix <- na.omit(for_matrix) 
+    
+    if(input$KMCluster_scale_Q == T){
+      for_matrix <- scale(for_matrix) 
+    }
+    
+    #for_matrix$id <- do.call(paste,c(sel[c(input$SelectGeno, input$SelectIV, input$SelectID, input$SelectTime)], sep="_"))
+    rownames(for_matrix) <- do.call(paste,c(sel[c(input$SelectGeno, input$SelectIV, input$SelectID, input$SelectTime)], sep="_"))
+    for_matrix
+    
+  })
   
   Optimal_cluster_number <- eventReactive(input$Go_KMClustering_advise, {
     
     mydata <- KMC_data_for_matrix()
     mydata
   })
+  
   
   KMClusters <- eventReactive(input$Go_KMClustering,{
     mydata <- KMC_data_for_matrix()
@@ -5837,8 +5891,25 @@ output$OT_graph_download_ui <- renderUI({
   
   # = = = = == = = = = >> MAIN CALCULATIONS / DATA OUTPUT << = = =  
   output$KMCluster_test <- renderDataTable({
-    KMC_data_for_matrix()
+    KMC_data_table_for_matrix()
   })
+  
+  # - - - - - >> DOWNLOAD TABLE << - - - - - - - - 
+  
+  
+  output$downl_KMC_for_matrix <- renderUI({
+    if(is.null(KMC_data_table_for_matrix())){
+      return()}
+    else
+      downloadButton("downl_for_matrix", label="Download data")
+  })  
+  
+  output$downl_for_matrix <- downloadHandler(
+    filename = paste("Data matrix to calculate K-means", input$KMC_pheno, "MVApp.csv"),
+    content <- function(file) {
+      temp <- KMC_data_table_for_matrix()
+      write.csv(temp, file)}
+  )
   
   
   # - - - - - - - >> ADVICE PLOTS << - - - - - - - - - 
@@ -5849,7 +5920,7 @@ output$OT_graph_download_ui <- renderUI({
       mydata <- KMC_data_for_matrix()
     # Elbow method
     plot <- fviz_nbclust(mydata, kmeans, method = "wss") +
-      labs(subtitle = "Elbow method")
+      labs(title = "Elbow method")
     print(plot)
   })
   
@@ -5867,7 +5938,7 @@ output$OT_graph_download_ui <- renderUI({
       mydata <- KMC_data_for_matrix()
       # Elbow method
       plot <- fviz_nbclust(mydata, kmeans, method = "wss") +
-        labs(subtitle = "Elbow method")
+        labs(title = "Elbow method")
       print(plot)
       
       dev.off()
@@ -5880,7 +5951,7 @@ output$OT_graph_download_ui <- renderUI({
       mydata <- KMC_data_for_matrix()
     # Silhouette method
     plot <- fviz_nbclust(mydata, kmeans, method = "silhouette")+
-      labs(subtitle = "Silhouette method")
+      labs(title = "Silhouette method")
     print(plot)
     
   })
@@ -5899,84 +5970,84 @@ output$OT_graph_download_ui <- renderUI({
       mydata <- KMC_data_for_matrix()
       # Silhouette method
       plot <- fviz_nbclust(mydata, kmeans, method = "silhouette")+
-        labs(subtitle = "Silhouette method")
+        labs(title = "Silhouette method")
       print(plot)
       dev.off()
     })
   
-#  output$indices_plots_KMC_1 <- renderPlot({
-#    if(is.null(Optimal_cluster_number())){return()}
-#    else
-#      mydata <- KMC_data_for_matrix()
+  output$indices_plots_KMC_1 <- renderPlot({
+    if(is.null(Optimal_cluster_number())){return()}
+    else
+      mydata <- KMC_data_for_matrix()
 #    #Majority of 30 indices
-#    nb <- NbClust(mydata, distance = "euclidean", min.nc = 2,
-#                  max.nc = 10, method = "kmeans", index = "hubert")
-#    plot <- fviz_nbclust(nb)
-#    print(plot)
-#  })
+    nb <- NbClust(mydata, distance = "euclidean", min.nc = 2,
+                  max.nc = 10, method = "kmeans", index = "hubert")
+    plot <- fviz_nbclust(nb)
+    print(plot)
+  })
   
-#  output$downl_indices_plots_KMC_1_ui <- renderUI({
-#    if(is.null(Optimal_cluster_number())){return()}
-#    else
-#      downloadButton("downl_indices_plots_KMC_1", "Download plot")
-#  })
+  output$downl_indices_plots_KMC_1_ui <- renderUI({
+    if(is.null(Optimal_cluster_number())){return()}
+    else
+     downloadButton("downl_indices_plots_KMC_1", "Download plot")
+  })
   
-#  output$downl_indices_plots_KMC_1 <- downloadHandler(
-#    filename = function(){paste("Advice plot for K-means clustering using Hubert index", "MVApp.pdf")},
-#    content = function(file) {
-#      pdf(file)
+  output$downl_indices_plots_KMC_1 <- downloadHandler(
+    filename = function(){paste("Advice plot for K-means clustering using Hubert index", "MVApp.pdf")},
+    content = function(file) {
+      pdf(file)
       
-#      mydata <- KMC_data_for_matrix()
-#      mydata <- as.matrix(mydata)
+      mydata <- KMC_data_for_matrix()
+      mydata <- as.matrix(mydata)
       #Majority of 30 indices
-#      nb <- NbClust(mydata, distance = "euclidean", min.nc = 2,
-#                    max.nc = 10, method = "kmeans", index = "hubert")
-#      plot <- fviz_nbclust(nb)
-#      print(plot)
+     nb <- NbClust(mydata, distance = "euclidean", min.nc = 2,
+                    max.nc = 10, method = "kmeans", index = "hubert")
+      plot <- fviz_nbclust(nb)
+      print(plot)
       
-#      dev.off()
-#    })
+      dev.off()
+    })
   
-#  output$indices_plots_KMC_2 <- renderPlot({
-#    if(is.null(Optimal_cluster_number())){return()}
-#    else
-#      mydata <- KMC_data_for_matrix()
-#      mydata <- as.matrix(mydata)
+  output$indices_plots_KMC_2 <- renderPlot({
+    if(is.null(Optimal_cluster_number())){return()}
+    else
+      mydata <- KMC_data_for_matrix()
+      mydata <- as.matrix(mydata)
 #    #Majority of 30 indices
-#    nb <- NbClust(mydata, distance = "euclidean", min.nc = 2,
-#                  max.nc = 10, method = "kmeans", index = "dindex")
-#    plot <- fviz_nbclust(nb)
-#    print(plot)
+    nb <- NbClust(mydata, distance = "euclidean", min.nc = 2,
+                  max.nc = 10, method = "kmeans", index = "dindex")
+    plot <- fviz_nbclust(nb)
+    print(plot)
     
-#  })
+  })
   
-#  output$downl_indices_plots_KMC_2_ui <- renderUI({
-#    if(is.null(Optimal_cluster_number())){return()}
-#    else
-#      downloadButton("downl_indices_plots_KMC_2", "Download plot")
-#  })
+  output$downl_indices_plots_KMC_2_ui <- renderUI({
+    if(is.null(Optimal_cluster_number())){return()}
+    else
+      downloadButton("downl_indices_plots_KMC_2", "Download plot")
+  })
   
-#  output$downl_indices_plots_KMC_2 <- downloadHandler(
-#    filename = function(){paste("Advice plot for K-means clustering using d index ", "MVApp.pdf")},
-#    content = function(file) {
-#      pdf(file)
+  output$downl_indices_plots_KMC_2 <- downloadHandler(
+    filename = function(){paste("Advice plot for K-means clustering using d index ", "MVApp.pdf")},
+    content = function(file) {
+      pdf(file)
       
-#      mydata <- KMC_data_for_matrix()
-#      mydata <- as.matrix(mydata)
+      mydata <- KMC_data_for_matrix()
+      mydata <- as.matrix(mydata)
 #      #Majority of 30 indices
-#      nb <- NbClust(mydata, distance = "euclidean", min.nc = 2,
-#                    max.nc = 10, method = "kmeans", index = "dindex")
-#      plot <- fviz_nbclust(nb)
-#      print(plot)
+      nb <- NbClust(mydata, distance = "euclidean", min.nc = 2,
+                    max.nc = 10, method = "kmeans", index = "dindex")
+      plot <- fviz_nbclust(nb)
+      print(plot)
       
-#      dev.off()
-#    })
+      dev.off()
+    })
   
   output$indices_plots_KMC_3 <- renderPlot({
     if(is.null(Optimal_cluster_number())){return()}
     else
-        mydata <- KMC_data_for_matrix()
-        mydata <- as.matrix(mydata)
+      mydata <- KMC_data_for_matrix()
+      mydata <- as.matrix(mydata)
     #Majority of 30 indices
     nb <- NbClust(mydata, distance = "euclidean", min.nc = 2,
                   max.nc = 10, method = "kmeans")
@@ -6002,8 +6073,8 @@ output$OT_graph_download_ui <- renderUI({
       nb <- NbClust(mydata, distance = "euclidean", min.nc = 2,
                     max.nc = 10, method = "kmeans")
       plot <- fviz_nbclust(nb)
-      print(plot)
-      
+     print(plot)
+    
       dev.off()
     })
   
@@ -6014,9 +6085,8 @@ output$OT_graph_download_ui <- renderUI({
     else
       mydata <- KMC_data_for_matrix()
     #Majority of 30 indices
-    
-    nb <- NbClust(mydata, distance = "euclidean", min.nc = 2,
-                  max.nc = 10, method = "kmeans")
+    nb<- NbClust(mydata, distance = "euclidean", min.nc = 2,
+                 max.nc = 10, method = "kmeans")
     
   })
   
@@ -6051,7 +6121,7 @@ output$OT_graph_download_ui <- renderUI({
   })  
   
   output$downl_KMC_test <- downloadHandler(
-    filename = paste("K-means clustering with ", input$kmclusters, " MVApp.csv"),
+    filename = paste("K-means clustering with K=", input$kmclusters, "MVApp.csv"),
     content <- function(file) {
       temp <- KMC_data_for_barplot()
       write.csv(temp, file)}
@@ -6203,7 +6273,6 @@ output$OT_graph_download_ui <- renderUI({
   output$KMC_test1 <- renderDataTable({
     barplotData()
   })
-  
   
   # - - - - - - - - - - - >> BAR PLOT << - - - - - - - - - - - 
   
@@ -6364,11 +6433,22 @@ output$OT_graph_download_ui <- renderUI({
           label = "Remove grid lines"))
   })
   
+  scatterplotData <- reactive({
+    spd<-KMC_data_for_barplot()
+    listIV<-c(input$SelectGeno, input$SelectIV, input$SelectTime)
+    facet<-input$facet_KMC_plot
+    listNonSel<-setdiff(listIV,facet)
+    if(input$KMC_split_scatterplot == T){
+      spd$id <- do.call(paste, c(spd[c(listNonSel)], sep="_"))}
+    if(input$KMC_split_scatterplot == F){
+      spd$id <- do.call(paste, c(spd[c(listIV)], sep="_"))}
+    spd
+  })
   
 # - - - - - - - - ->> SCATTER PLOT << - - - - - - - - - - 
   
   kmeans_SCP <- reactive({
-    df <- barplotData()
+    df <- scatterplotData()
     df$cluster <-as.factor(df$cluster)
     p <- ggplot(df, aes(x = df[,input$xcol_kmeans], y = df[,input$ycol_kmeans], color = cluster)) + 
       geom_point(aes(text=id))+

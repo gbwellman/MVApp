@@ -535,22 +535,19 @@ tabPanel("Clustering", icon = icon("sitemap"),
              mainPanel(
                           navbarPage("KMC",
                                      tabPanel("Selected dataset",
-                                              uiOutput("KmeanData_download_button"),
+                                              column(12,uiOutput("downl_KMC_data_type")),
                                               dataTableOutput("KMC_data_table")
                                               ),
                                       tabPanel("Final data for K-means",
+                                              column(12,uiOutput("downl_KMC_for_matrix")),
                                               dataTableOutput("KMCluster_test")
                                               ),
 
                                      tabPanel("Optimal number of clusters",
-                                              p("Estimation of the optimal number of clusters for k-means clustering can be done through various different methods. More than thirty indices and methods have been published. 
-The most commonly used are the elbow method and the silhouette method. Both are graphical methods where the angle in the plot indicates the suggested number of clusters. 
-
-The elbow method consists in plotting the total intra-cluster variation or total within-cluster sum of square (WSS) as a function of the number of clusters. The optimal number of clusters is that where adding another cluster does not improve much the compactness of the clustering as defined by total WSS.
-
-The average silhouette of the data is…
-
-Besides the elbow and silhouette method, 30 more indices are computed and the results are reported below suggesting the best number of clusters using the “majority rule”. Two of these indices are also graphical estimations: Hubert index and D index, explained below."),
+                                              p("Estimation of the optimal number of clusters for k-means clustering can be done through various different methods. More than thirty indices and methods have been published. The most commonly used are the elbow method and the silhouette method. Both are graphical methods where the angle in the plot indicates the suggested number of clusters."),
+p("The elbow method consists in plotting the total intra-cluster variation or total within-cluster sum of square (WSS) as a function of the number of clusters. The optimal number of clusters is that where adding another cluster does not improve much the compactness of the clustering as defined by total WSS."),
+p("The average silhouette of the data is…"),
+p("Besides the elbow and silhouette method, 30 more indices are computed and the results are reported below suggesting the best number of clusters using the “majority rule”. Two of these indices are also graphical estimations: Hubert index and D index, explained below."),
                                h3("Graphical methods", align = "center"),
                                               column(6, uiOutput("downl_elbow_graph_KMC_ui"),
                                                         plotOutput("elbow_graph_KMC")),
