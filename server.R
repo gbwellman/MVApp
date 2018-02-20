@@ -3701,7 +3701,7 @@ output$OT_graph_download_ui <- renderUI({
   })
    
    
-   ########### download cortable file, error!!! ####################################  
+   ########### download cortable file ####################################  
    
      
   output$cortable_download_button <- downloadHandler(
@@ -3809,7 +3809,10 @@ output$OT_graph_download_ui <- renderUI({
     cat("\n")
   }}
 })
-  
+
+   
+   
+   
   ############ interactive scatter plot ##########
   output$Pheno1 <- renderUI({
     if (is.null(input$SelectDV)) {
@@ -3841,8 +3844,7 @@ output$OT_graph_download_ui <- renderUI({
   })
   
   output$colorby <- renderUI({
-    if ((is.null(input$SelectIV)) |
-        (input$SelectGeno == FALSE)) {
+    if (input$scatter_color=F) {
       return ()
     } else
       tagList(
@@ -3856,8 +3858,7 @@ output$OT_graph_download_ui <- renderUI({
   })
   
   output$shapeby <- renderUI({
-    if ((is.null(input$SelectIV)) |
-        (input$SelectGeno == FALSE)) {
+      if (input$scatter_color=F) {
       return ()
     } else
       tagList(

@@ -350,14 +350,15 @@ tabPanel("Correlations",
     tabPanel(
       "Correlation Plot",
       sidebarPanel(
+        wellPanel(
         uiOutput("cor_Pheno_data"),
         # which data set to use (summarized / na / original) selectize, multiple = F
         uiOutput("cor_phenos",lable = "Choose nummeric variables from your data for correlation analysis"),
         # which data set to use (summarized / na / original) selectize, multiple = F
         checkboxInput("cor_data_subset", label = "Subset your data for correlation analysis?"),
         uiOutput("cor_subset"),
-        uiOutput("CorSpecIV_val"),
-        checkboxInput("cor_sig_show", label = "Indicate non-significant correlations"),
+        uiOutput("CorSpecIV_val")),
+        wellPanel(
         uiOutput("cor_sig_level_output"),
         selectInput("corMethod", "Correlation Method:", choices = c("pearson","spearman")),
         selectInput("corrplotMethod", "Plot Method:", choices = c("circle", "square", "ellipse", "number", "shade", "color", "pie")),
@@ -365,6 +366,7 @@ tabPanel("Correlations",
         selectInput("corOrder", "Order the lables by:", choices = list("Original order" = "original","Angular order of eigenvectors" = "AOE", "First Principal Component order"  = "FPC", "Hierarchical clustering order"  = "hclust", "Alphabetical order" = "alphabet")),
         numericInput("Cor_Big_steps", "Number of levels:", value = 10, min = 3, max = 10),
         selectizeInput("Cor_color_palette", "Palette:", choices = list("Spectral" = "Spectral", "Red-Yellow-Green" = "RdYlGn", "Red-Yellow-Blue" = "RdYlBu", "Red-Grey" = "RdGy", "Red-Blue" = "RdBu", "Purple-Orange" = "PuOr", "Purple-Green" = "PRGn", "Pink-Green" = "PiYG", "Brown-Blue-Green" = "BrBG")),
+        checkboxInput("cor_sig_show", label = "Indicate non-significant correlations")),
         #actionButton("Go_table", label = "Click to see the correlation table with p value", icon = icon("play-circle"))
         checkboxInput(inputId = "show_table",
                       label = "Show correlation table",
@@ -375,7 +377,7 @@ tabPanel("Correlations",
         uiOutput("corrplot_button"),
         plotOutput("corrplot"),
         br(),
-        textOutput(outputId = "description"),        
+        verbatimTextOutput(outputId = "description"),        
         br(),br(),
         uiOutput("cortable_button"),
         br(),
@@ -384,15 +386,20 @@ tabPanel("Correlations",
     ),
     tabPanel(
       "Scatterplots",
-      sidebarPanel(uiOutput("Pheno1"), uiOutput("Pheno2"), uiOutput("colorby"), uiOutput("shapeby")),
+      sidebarPanel(uiOutput("Pheno1"), uiOutput("Pheno2"), 
+                   checkboxInput("scatter_color", label = "Color the plot by"),
+                   uiOutput("colorby"), 
+                   checkboxInput("scatter_shape", label = "Shape the plot by"),
+                   uiOutput("shapeby")),
       mainPanel(
         textOutput("corrsq"),
         textOutput("corpval"),
         uiOutput("downl_scatter_corr_ui"),
         plotlyOutput("scatterplot")
-      )))
+      )
+      )
   # end of Tab#6
-),
+)),
 
 
 
