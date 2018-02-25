@@ -652,10 +652,12 @@ tabPanel("Quantile regression", icon = icon("paper-plane-o"),
                                  column(4,uiOutput("QA_plot_slider_input"))
                                  
                                ),
-                               actionButton("Go_plot", label = "View plot(s):"),
+                               fluidRow(actionButton("Go_plot", label = "View plot(s):")),
                                
+                               fluidRow(downloadButton("downl_plot_QA", "Download plot")),
                                plotOutput("QA_plot", height = 425),
-                               downloadButton("downl_plot_QA", "Download plot")
+                               column(12,checkboxInput("show_QA_legend", "Show the figure legend"),
+                                      uiOutput("QA_legend_show"))
                                #          br(),
                                #           uiOutput("QA_plot_download")
                                

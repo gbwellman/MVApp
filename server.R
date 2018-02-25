@@ -317,11 +317,11 @@ function(input, output) {
   output$best_model_advice <- renderPrint({
     fraka <- Model_est_data()
     fraka1 <- colnames(fraka)[apply(fraka,1,which.max)]
-    cat(paste("The model with the best fit is", fraka1[1]))
-    cat("\n")
-    cat("The model estimation is based on the R2 values for Linear, Quadratic, Exponential and Square root functions, presented in the table below.")
-    cat("\n")
-    cat("If your data contains many timepoints, you can consider fitting a polynomial curves, using smoothed / cubic splines available in the model menu.")
+    paste("The model with the best fit is", fraka1[1])
+    #cat("\n")
+    (expression(paste("The model estimation is based on the", R^2 ,"values for Linear, Quadratic, Exponential and Square root functions, presented in the table below.")))
+    #cat("\n")
+    paste("If your data contains many timepoints, you can consider fitting a polynomial curves, using smoothed / cubic splines available in the model menu.")
   })
   
   
@@ -7315,7 +7315,7 @@ output$OT_graph_download_ui <- renderUI({
       lines (tau,coef(fit_qr[[index[k]]])[input$Model_variable_select,],col=col[k],cex=1.5)
     }
     
-    legend("topright",inset=c(-0.17,0),legend=c(listgroupby,"Not significant"),horiz = F,pch = c(20,20,4),col = c(col,"black"),
+    legend("topright",inset=c(-0.17,0),legend=c(listgroupby,"Not significant"),horiz = F, pch = c(rep(20, nrow(listgroupby)),4),col = c(col,"black"),
            bty = "n",xpd=NA,cex=1)
     
   })
@@ -7439,7 +7439,7 @@ output$OT_graph_download_ui <- renderUI({
         lines (tau,coef(fit_qr[[index[k]]])[expl[j],],col=col[k],cex=1.5)
       }
       
-      legend("topright",inset=c(-0.32,0),legend=c(listgroupby,"Not significant"),horiz = F,pch = c(20,20,4),col = c(col,"black"),
+      legend("topright",inset=c(-0.32,0),legend=c(listgroupby,"Not significant"),horiz = F,pch = c(rep(20, nrow(listgroupby)),4),col = c(col,"black"),
              bty = "n",xpd=NA,cex=1)
       
     }
@@ -7447,6 +7447,8 @@ output$OT_graph_download_ui <- renderUI({
   })
   
   
+  
+
   ## plot output
   output$QA_plot <- renderPlot({
     if(input$model_type_plot == "single plot"){
@@ -7462,6 +7464,7 @@ output$OT_graph_download_ui <- renderUI({
   
   #### download button for plots
    output$downl_plot_QA <-  
+     
       downloadHandler(
   
      filename = function(){paste("Quantile plots MVApp", "pdf" , sep=".") },
@@ -7543,7 +7546,7 @@ output$OT_graph_download_ui <- renderUI({
         lines (tau,coef(fit_qr[[index[k]]])[input$Model_variable_select,],col=col[k],cex=1.5)
       }
       
-      legend("topright",inset=c(-0.32,0),legend=c(listgroupby,"Not significant"),horiz = F,pch = c(20,20,4),col = c(col,"black"),
+      legend("topright",inset=c(-0.32,0),legend=c(listgroupby,"Not significant"),horiz = F,pch = c(rep(20, nrow(listgroupby)),4),col = c(col,"black"),
              bty = "n",xpd=NA,cex=1)
       }
       
@@ -7635,7 +7638,7 @@ output$OT_graph_download_ui <- renderUI({
             lines (tau,coef(fit_qr[[index[k]]])[expl[j],],col=col[k],cex=1.5)
           }
           
-          legend("topright",inset=c(-0.8,0),legend=c(listgroupby,"Not significant"),horiz = F,pch = c(20,20,4),col = c(col,"black"),
+          legend("topright",inset=c(-0.8,0),legend=c(listgroupby,"Not significant"),horiz = F,pch = c(rep(20, nrow(listgroupby)),4),col = c(col,"black"),
                  bty = "n",xpd=NA,cex=1)
           
         }
@@ -7643,10 +7646,37 @@ output$OT_graph_download_ui <- renderUI({
       
       dev.off()
     } 
+       
   )  
-  
 
-  
+
+   ### Figure legend:
+   output$QA_legend_show <- renderUI({
+     if(input$show_QA_legend == F){
+       return()
+     }
+     else{
+       verbatimTextOutput("Legend_QA")
+     }
+   })
+   
+   ### legend output
+   output$Legend_QA <- renderPrint({
+     
+     which_data <- input$Outlier_on_data  
+     how_many <- input$Out_pheno_single_multi  
+     
+     
+     cat("# # > > > Figure legend: < < < # # #")
+     cat("\n")
+     cat("The scatterplot shows the behavior of the respective plant trait on the response", input$ResponsePheno,".") 
+     cat("\n")
+     cat("The x-axis represents the quantile level and the y-axis represents the estimated value of the respective regression coefficient. ")
+     cat("The dots represent that the coefficient is significant at",input$p_value_threshold ,"level of significance, while the cross sign represents non-significance. ")
+     cat("Different colors indicate different",input$group_plot_by,".")
+   })
+   
+   
   
   # end of the script
 }
