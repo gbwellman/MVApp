@@ -3456,7 +3456,7 @@ function(input, output) {
           choices = c("raw data", "missing values removed", "outliers removed"), multiple = F))
   })  
   
-  PCA_data_type <- eventReactive(input$Go_PCAdata,{
+  PCA_data_type <- eventReactive(input$Go_PCAdata,{ ### Are the references to the Data Curation tab still the same?
     if(input$PCA_data == "raw data"){
       PCA_data_type <- my_data()
     }
@@ -3480,12 +3480,14 @@ function(input, output) {
       tagList(
         selectizeInput(
           inputId = "PCA_pheno",
-          label = "Dependent Variables for PCA",
+          label = "Traits for PCA",
           choices = c(input$SelectDV),
           multiple = T
         )
       )
   })
+    
+    
   output$PCA_subset_trait <- renderUI({
     if(input$PCA_data_subset == "full dataset"){
       return()
@@ -3494,7 +3496,7 @@ function(input, output) {
       tagList(
         selectizeInput(
           inputId = "PCA_subset_T",
-          label = "Independent Variables to subset the data",
+          label = "Subset the data by:",
           choices=c(input$SelectGeno, input$SelectIV, input$SelectTime),
           multiple=T
         ))}
@@ -3542,7 +3544,7 @@ function(input, output) {
       id_lista2 <- setdiff(id_lista, subset_lista)
       temp$subset_id <- do.call(paste,c(temp[c(subset_lista)], sep="_"))
       temp3 <- subset(temp, temp$subset_id == input$PCA_subset_S)
-      temp3$id <- do.call(paste,c(temp3[c(id_lista2, subset_lista)], sep="_"))
+      temp3$id <- do.call(paste,c(temp3[c(id_lista2)], sep="_"))
       temp2 <- subset(temp3, select = c("id", input$PCA_pheno))
     }
     if(input$PCA_data_subset == "full dataset"){{
@@ -3550,8 +3552,17 @@ function(input, output) {
       temp2 <- subset(temp, select = c("id", input$PCA_pheno))
     }}
     
-    return(temp2)
+    temp3 <- as.matrix(temp2[,2:ncol(temp2)])
+    row.names(temp3) <- temp2$id
+    
+    #### Scaling ####
+    if(input$PCA_Scale_Q == T){
+      temp3 <- scale(temp3)
+    }
+    
+    return(temp3)
   })
+  
   
   output$PCA_final_table <- renderDataTable({
     PCA_final_data()
@@ -3579,11 +3590,86 @@ function(input, output) {
           type="b", pch=19, col = "red")
   })
   
-  output$Eigen_download_button <- renderUI({
+  output$Eigen_plot_download <- downloadHandler(
+    filename = function(){paste("Eigen plot MVApp", "pdf" , sep=".") },
+    content = function(file) {
+      pdf(file)
+      eigenvalues <- PCA_eigen_data()
+      barplot(eigenvalues[, 2], names.arg=1:nrow(eigenvalues), 
+              main = "Variances",
+              xlab = "Principal Components",
+              ylab = "Percentage of variances",
+              col ="steelblue")
+      
+      lines(x = 1:nrow(eigenvalues), eigenvalues[, 2], 
+            type="b", pch=19, col = "red")
+    })
+  
+  
+  #### FIGURE LEGEND ####
+  output$Eigen_legend_show <- renderUI({
+    if(input$show_Eigen_legend == F){
+      return()
+    }
+    else{
+      verbatimTextOutput("Legend_Eigen")
+    }
+  })
+  
+   output$Legend_Eigen <- renderPrint({
+    if(input$Go_PCA == F){
+      
+      # Data curation:
+      if(input$Go_outliers == T){
+        how_many <- input$Out_pheno_single_multi  
+        
+        if(input$Out_pheno_single_multi == "Some phenotypes"){
+          which_ones <- input$DV_outliers
+        }
+        if(input$Out_pheno_single_multi == "Single phenotype"){
+          which_ones <- input$DV_outliers
+        }}
+      
+      
+      cat("# # > > > Figure legend: < < < # # #")
+      cat("\n")
+      cat("\n")
+      cat("The Eigenvalues representing individual Principle Components.")
+      cat(" The PCA was performed using", input$PCA_data)
+      
+      # if(input$PCA_data_subset) <- make sure that this is checkbox
+      # cat("The data was subsetted for" , input$WHAT (TREATMENT), " the shown PCA is representing samples belonging to subset ", input$WHAT_SUBSET (SALT))
+    
+     
+     # Data curation:
+     if(input$PCA_data == "outliers removed data"){    
+       cat(" The outliers are characterized using", input$outlier_method, "method for", how_many)
+       if(how_many == "Single phenotype"){
+         cat(" (", which_ones, ").")}
+       if(how_many == "Some phenotypes"){
+         cat(" (", which_ones, ").")}
+       else{
+         cat(".")}
+       
+       if(input$What_happens_to_outliers == "removed together with entire row"){
+         cat(" The sample is characterized as an outlier when it is classified as such in at least ", input$outlier_cutoff, " traits. The samples that are characterized as outlier in", input$outlier_cutoff, "are removed from the analysis.")}
+       if(input$What_happens_to_outliers == "replaced by NA"){
+         cat(" The individual values characterized as outliers are replaced by empty cells.")}
+       if(input$Outlier_on_data == "r2 fitted curves curated data"){
+         cat(" The data was additionally curated based on r2 using", input$model ,"and the samples where with r2 was below", input$rsq_limit, " cut-off limit were eliminated from the dataset. ")}
+       if(input$Outlier_on_data == "r2 fitted and missing values removed data"){
+         cat(" The data was additionally curated based on r2 using", input$model ,"and the samples where with r2 was below", input$rsq_limit, " cut-off limit were eliminated from the dataset. ")}
+     }
+     
+    }   
+  })
+  
+  
+  output$Eigen_data_download <- renderUI({
     if(is.null(PCA_eigen_data())){
       return()}
     else
-      downloadButton("Eigen_data", label="Download Eigen values")
+      downloadButton("Eigen_data", label="Download table")
   })
   
   output$Eigen_data <- downloadHandler(
@@ -3647,6 +3733,45 @@ function(input, output) {
                             high="red", midpoint=mid)+theme_bw()
   })
   
+  #### FIGURE LEGEND ####
+  output$PCA_contribution_legend_show <- renderUI({
+    if(input$show_PCA_contribution_legend == F){
+      return()
+    }
+    else{
+      verbatimTextOutput("Legend_PCA_contribution")
+    }
+  })
+  
+  output$Legend_PCA_contribution <- renderPrint({
+    if(input$Go_PCA == F){
+      
+  #### FIGURE LEGEND ####
+      
+      
+      
+  output$PCA_contribution_plot_download <- downloadHandler(
+    filename = function(){paste("PCA contributions plot MVApp", "pdf" , sep=".") },
+    content = function(file) {
+      pdf(file)
+      beginCol <-
+        length(c(
+          input$SelectIV,
+          input$SelectGeno,
+          input$SelectTime,
+          input$SelectID
+        )) 
+      endCol <-ncol(PCA_final_data())
+      PCA_ready <- PCA_final_data()
+      PCA_ready <- PCA_ready[, beginCol : endCol]
+      res.pca <- PCA(PCA_ready, graph = FALSE)
+      mid=median(res.pca$var$contrib)
+      fviz_pca_var(res.pca, axes = c(as.numeric(input$Which_PC1),as.numeric(input$Which_PC2)), col.var="contrib", geom ="auto", labelsize = 4, repel=T, label="var", addlabels=T, invisible = "none") +
+        scale_color_gradient2(low="grey", mid="purple", 
+                              high="red", midpoint=mid)+theme_bw()
+    })
+      
+  
   output$PCA_contrib_select <- renderUI({
     if ((input$Go_PCAdata == FALSE)) {
       return()
@@ -3678,6 +3803,39 @@ function(input, output) {
     fviz_contrib(res.pca, choice = 'var', axes = c(as.numeric(input$Which_PC_contrib)), xtickslab.rt = 90)
   })
   
+  #### FIGURE LEGEND ####
+  output$PCAcontrib_legend_show <- renderUI({
+    if(input$show_PCAcontrib_legend == F){
+      return()
+    }
+    else{
+      verbatimTextOutput("Legend_PCAcontrib")
+    }
+  })
+  
+  output$Legend_PCAcontrib <- renderPrint({
+    if(input$Go_PCA == F){
+      
+  #### FIGURE LEGEND ####
+  
+  output$Contrib_trait_plot_download <- downloadHandler(
+    filename = function(){paste("PCA scatterplot MVApp", "pdf" , sep=".") },
+    content = function(file) {
+      pdf(file)
+      beginCol <-
+        length(c(
+          input$SelectIV,
+          input$SelectGeno,
+          input$SelectTime,
+          input$SelectID
+        )) 
+      endCol <-ncol(PCA_final_data())
+      PCA_ready <- PCA_final_data()
+      PCA_ready <- PCA_ready[, beginCol : endCol]
+      res.pca <- PCA(PCA_ready, graph = FALSE)
+      fviz_contrib(res.pca, choice = 'var', axes = c(as.numeric(input$Which_PC_contrib)), xtickslab.rt = 90)
+    })
+  
   PCA_contrib_var <- eventReactive(input$Go_PCA,{
     beginCol <-2
     endCol <-ncol(PCA_final_data())
@@ -3696,7 +3854,7 @@ function(input, output) {
     if(is.null(PCA_contrib_var())){
       return()}
     else
-      downloadButton("contrib_var", label="Download PCA contribution by variable")
+      downloadButton("contrib_var", label="Download table")
   })
   
   output$contrib_var <- downloadHandler(
@@ -3732,7 +3890,6 @@ function(input, output) {
     PCA_ready <- PCA_ready[, beginCol : endCol]
     res.pca <- PCA(PCA_ready, graph = FALSE)
     
-    ###### ADDING REFERENCE DATA HERE #######
     temp <- data.frame(PCA_data_type())
     temp <- subset(temp, select=c(input$SelectGeno, input$SelectIV, input$SelectTime, input$SelectID, input$PCA_pheno))
     
@@ -3750,7 +3907,6 @@ function(input, output) {
       temp2 <- temp
     }}
     
-    ##### END REFERENCE DATA HERE ######   
     temp4 <- subset(temp2, select = c(input$SelectGeno, input$SelectIV, input$SelectTime, input$SelectID))
     
     temporary <- res.pca$ind$coord
@@ -3768,7 +3924,7 @@ function(input, output) {
     if(is.null(PCA_coord_ind())){
       return()}
     else
-      downloadButton("coord_ind", label="Download individual PCA coordinates")
+      downloadButton("coord_ind", label="Download table")
   })
   
   output$coord_ind <- downloadHandler(
@@ -3791,10 +3947,40 @@ function(input, output) {
     super_plot
   })
   
-  # - -  - - - - - - - >> Categorical PCA <<- - - - - - - - - - - - 
+  #### FIGURE LEGEND ####
+  output$PCAscatter_legend_show <- renderUI({
+    if(input$show_PCAscatter_legend == F){
+      return()
+    }
+    else{
+      verbatimTextOutput("Legend_PCAscatter")
+    }
+  })
   
+  output$Legend_PCAscatter <- renderPrint({
+    if(input$Go_PCA == F){
+      
+  #### FIGURE LEGEND ####
   
-  
+  output$Contrib_trait_plot_download <- downloadHandler(
+    filename = function(){paste("Contribution per PC plot MVApp", "pdf" , sep=".") },
+    content = function(file) {
+      pdf(file)
+      la_table <- PCA_coord_ind()
+      PC_x_axis <- paste('Dim', input$Which_PC1)
+      PC_y_axis <- paste('Dim', input$Which_PC2)  
+      la_table$x_axis <- la_table[,input$Which_PC1]
+      la_table$y_axis <- la_table[,input$Which_PC2]
+      la_table$color <- la_table[,input$PCA_Color]
+      super_plot <- ggplot(data = la_table, aes(x = x_axis, y= y_axis, colour = color))
+      super_plot <- super_plot + geom_point()
+      super_plot <- super_plot + xlab(PC_x_axis)
+      super_plot <- super_plot + ylab(PC_y_axis)
+      super_plot
+      
+      print(super_plot)
+      dev.off()
+    })
   
   
   # - - - - - - - - - - - - - - >> MDS <<- - - - - - - - - - - - - 
@@ -3832,21 +4018,21 @@ function(input, output) {
       tagList(
         selectizeInput(
           inputId = "MDS_pheno",
-          label = "Dependent Variables for the MDS",
+          label = "Traits for MDS",
           choices = c(input$SelectDV),
           multiple = T
         ))
   })
   
   output$MDS_subset_trait <- renderUI({
-    if(input$MDS_subset_Q == "Full dataset"){
+    if(input$MDS_subset_Q == "full dataset"){
       return()
     }
     else{
       tagList(
         selectizeInput(
           inputId = "MDS_subset_T",
-          label = "Independent Variables to subset the data",
+          label = "Subset data by:",
           choices=c(input$SelectGeno, input$SelectIV, input$SelectTime),
           multiple=T
         ))}
@@ -3900,7 +4086,7 @@ function(input, output) {
     temp <- data.frame(MDS_data_type())
     temp <- subset(temp, select=c(input$SelectGeno, input$SelectIV, input$SelectTime, input$SelectID, input$MDS_pheno))
     
-    if(input$MDS_subset_Q == "Subsetted dataset"){
+    if(input$MDS_subset_Q == "subsetted dataset"){
       
       subset_lista <- input$MDS_subset_T
       id_lista <- c(input$SelectGeno, input$SelectIV, input$SelectTime)
@@ -3910,7 +4096,7 @@ function(input, output) {
       temp3$id <- do.call(paste,c(temp3[c(id_lista2)], sep="_"))
       temp2 <- subset(temp3, select = c("id", input$MDS_pheno))
     }
-    if(input$MDS_subset_Q == "Full dataset"){{
+    if(input$MDS_subset_Q == "full dataset"){{
       temp$id <- do.call(paste,c(temp[c(input$SelectGeno, input$SelectIV, input$SelectTime, input$SelectID)], sep="_"))
       temp2 <- subset(temp, select = c("id", input$MDS_pheno))
     }}
@@ -3918,10 +4104,9 @@ function(input, output) {
     temp3 <- as.matrix(temp2[,2:ncol(temp2)])
     row.names(temp3) <- temp2$id
     
-    #### CHECK 
+    #### Scaling ####
     if(input$MDS_Scale_Q == T){
       temp3 <- scale(temp3)
-      #colnames(temp2)[1] <- "id"
     }
     
     return(temp3)
@@ -3975,8 +4160,23 @@ function(input, output) {
     super_plot <- super_plot + xlab("Dimension 1")
     super_plot <- super_plot + ylab("Dimension 2")
     super_plot
-    
   })
+  
+  #### FIGURE LEGEND ####
+  output$PCAscatter_legend_show <- renderUI({
+    if(input$show_PCAscatter_legend == F){
+      return()
+    }
+    else{
+      verbatimTextOutput("Legend_PCAscatter")
+    }
+  })
+  
+  output$Legend_PCAscatter <- renderPrint({
+    if(input$Go_PCA == F){
+      
+      #### FIGURE LEGEND ####
+      
   
   output$MDS_plot_download <- downloadHandler(
     filename = function(){paste("MDS plot MVApp", "pdf" , sep=".") },
@@ -4010,7 +4210,7 @@ function(input, output) {
     if(is.null(MDS_Calculations())){
       return()}
     else
-      downloadButton("data_MDS", label="Download MDS data")
+      downloadButton("data_MDS", label="Download table")
   })
   
   output$MDS_downl_data <- downloadHandler(
@@ -4052,7 +4252,7 @@ function(input, output) {
     tdatam_df
   })
   
-  output$MDS_sample_table_transposed_dt <- renderDataTable({
+  output$MDS_sample_table_transposed_dt <- renderDataTable({ ### Table not showing :(
     data <- MDS_Calculations_transposed()
     
     if(input$MDS_KMC_Q == T){
@@ -4068,7 +4268,7 @@ function(input, output) {
     if(is.null(MDS_Calculations_transposed())){
       return()}
     else
-      downloadButton("data_MDS", label="Download transposed MDS data")
+      downloadButton("data_MDS", label="Download table")
   })
   
   output$data_MDS <- downloadHandler(

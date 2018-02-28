@@ -366,17 +366,16 @@ tabPanel("Correlations",
 
 tabPanel("Reduction in dimensionality", icon = icon("object-group"),
 navbarPage("",
-  tabPanel("PCA",
+  tabPanel("Principle Component Analysis",
   sidebarPanel(
     fluidRow(
-      uiOutput("PCA_Pheno_data"), # which phenotype data (summarized / na / original) selectize, multiple = F
-      actionButton("Go_PCAdata", label = "set the dataset"),
-      uiOutput("PCA_Select_pheno"), # which traits would you like to use? selectize, multiple = T
+      uiOutput("PCA_Pheno_data"),
+      actionButton("Go_PCAdata", label = "Set the dataset"),
+      uiOutput("PCA_Select_pheno"),
+      checkboxInput("PCA_Scale_Q", "Scale the data?"),
       selectizeInput("PCA_data_subset", label = "Dataset", choices=c("full dataset", "subsetted dataset")),
       uiOutput("PCA_subset_trait"),
       uiOutput("PCA_subset_specific"),
-      
-      # uiOutput("SelectGroup"), # How would you like to colour, selectize (input$SelectGeno, input$SelectDV, input$SelectTime, multiple = F)
       br(),
       actionButton("Go_PCA", label = "Unleash the PCA monster",icon = icon("play-circle"))
     )),
@@ -387,21 +386,40 @@ navbarPage("",
                tabPanel("Final data for PCA",
                         dataTableOutput("PCA_final_table")),
                tabPanel("Eigenvalues",
+                        downloadButton("Eigen_plot_download", "Download plot"), ### Downloaded plot is blank for plots made by R package :/
                         plotOutput("PCA_eigen_plot"),
-                        uiOutput("Eigen_download_button"),
+                       br(),
+                       column(12,checkboxInput("show_Eigen_legend", "Show figure legend"),
+                              uiOutput("Eigen_legend_show")),
+                       hr(),
+                        uiOutput("Eigen_data_download"),
                         dataTableOutput("Eigen_data_table")),
                tabPanel("Contribution of variables",
+                        downloadButton("PCA_contribution_plot_download", "Download plot"), ### Downloaded plot is blank for plots made by R package :/
                         plotOutput("PCA_contribution_plot"),
+                        br(),
+                        column(12,checkboxInput("show_PCA_contribution_legend", "Show figure legend"),
+                               uiOutput("PCA_contribution_legend_show")),
                         hr(),
                         column(4,uiOutput("PCA1_select")),
                         column(4,uiOutput("PCA2_select")),
                         column(4, uiOutput("PCA_colorby")),
+                        downloadButton("PCAscatter_plot_download", "Download plot"),
                         column(12, plotlyOutput("PCA_scatterplot"),
+                        br(),
+                        column(12,checkboxInput("show_PCAscatter_legend", "Show figure legend"),
+                                  uiOutput("PCAscatter_legend_show")),
+                        hr(),                 
                                   uiOutput("Coord_download_ind"),
                                   dataTableOutput("PCA_coordinates_ind"))),
                tabPanel("Contribution per PC",
                         uiOutput("PCA_contrib_select"),
+                        downloadButton("Contrib_trait_plot_download", "Download plot"),
                         plotOutput("Contrib_trait_plot"),
+                        br(),
+                        column(12,checkboxInput("show_PCAcontrib_legend", "Show figure legend"),
+                               uiOutput("PCAcontrib_legend_show")),
+                        hr(),                 
                         uiOutput("Contrib_download_var"),
                         dataTableOutput("PCA_contribution_var"))
     ))),
@@ -409,18 +427,18 @@ navbarPage("",
            sidebarPanel(
              
              fluidRow(
-               uiOutput("MDS_Pheno_data"), #
-               actionButton("Go_MDSdata", label = "Set the data for MDS"),
-               uiOutput("MDS_Select_pheno"), #
+               uiOutput("MDS_Pheno_data"),
+               actionButton("Go_MDSdata", label = "Set the dataset"),
+               uiOutput("MDS_Select_pheno"),
                checkboxInput("MDS_Scale_Q", "Scale the data?"),
-               selectizeInput("MDS_subset_Q", label = "Perform MDS on:", choices=c("Full dataset", "Subsetted dataset")),
+               selectizeInput("MDS_subset_Q", label = "Perform MDS on:", choices=c("full dataset", "subsetted dataset")),
                uiOutput("MDS_subset_trait"),
                uiOutput("MDS_subset_specific"),
                
                br(),
-                checkboxInput("MDS_KMC_Q", label = "Cluster the samples using k-means?"),
+                checkboxInput("MDS_KMC_Q", label = "Cluster samples using k-means?"),
                 uiOutput("MDS_KMC_number"),
-                actionButton("Go_MDS", label = "Unleash the power of Multidimensional Scaling"))),
+                actionButton("Go_MDS", label = "Unleash the power of MDS"))),
            
            
            mainPanel(
@@ -432,13 +450,21 @@ navbarPage("",
                         tabPanel("MDS of the samples",
                                  downloadButton("MDS_plot_download", "Download plot"),
                                  plotlyOutput("MDS_sample_graph"),
+                                 br(),
+                                 column(12,checkboxInput("show_MDSsample_legend", "Show figure legend"),
+                                        uiOutput("MDSsample_legend_show")),
+                                 hr(),
                                  uiOutput("MDS_download_samples"),
                                  dataTableOutput("MDS_table_samples")),
-                        tabPanel("Scaling of the Dependent Variables",
+                        tabPanel("Scaling of traits",
                                  downloadButton("MDS_plot_download_transposed", "Download plot"),
-                                 plotOutput("MDS_sample_graph_transposed")
-                                 #uiOutput("MDS_download_transposed"),
-                                 #dataTableOutput("MDS_sample_table_transposed_dt")
+                                 plotOutput("MDS_sample_graph_transposed"),
+                                 br(),
+                                 column(12,checkboxInput("show_MDSsample_graph_legend", "Show figure legend"),
+                                        uiOutput("MDSsample_graph_legend_show")),
+                                 hr(),
+                                 uiOutput("MDS_download_transposed"),
+                                 dataTableOutput("MDS_sample_table_transposed_dt") ### Table doesn't show :(
                                  )
                         ))
              
