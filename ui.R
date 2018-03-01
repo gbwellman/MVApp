@@ -524,9 +524,9 @@ fluidPage(
                                                        br(),
                                                        column(12,checkboxInput("show_MDSsampleT_legend", "Show figure legend"),
                                                               uiOutput("MDSsampleT_legend_show")),
-                                                       hr(),
-                                                       uiOutput("MDS_download_transposed"),
-                                                       dataTableOutput("MDS_sample_table_transposed_dt")
+                                                       hr()
+                                                       #uiOutput("MDS_download_transposed"),
+                                                       #dataTableOutput("MDS_sample_table_transposed_dt")
                                               )
                                    ))))
              # end Tab 7
