@@ -5025,8 +5025,6 @@ function(input, output) {
       dev.off()
         })
   
-  
-  
   #### FIGURE LEGEND ####
   output$Eigen_legend_show <- renderUI({
     if(input$show_Eigen_legend == F){
@@ -5054,15 +5052,16 @@ function(input, output) {
           which_ones <- input$DV_outliers
         }}
       
-      
       cat("# # > > > Figure legend: < < < # # #")
       cat("\n")
       cat("\n")
-      cat("Eigenvector Scree plot. PCA eigenvalues are shown in decreasing order representing the variance explained by each principle component from the most significant to the least.")
-      cat(" PCA was performed using", input$PCA_data, ".")
+      cat("Scree plot of PCA eigenvectors illustrating the percentage of variance across different principle components.") 
+      cat(" Percentage variance explained by each principle component is shown from the most significant to the least.")
+      cat(" PCA was performed on", input$PCA_data, "using the following traits:(",  input$PCA_pheno,").")
+      
       
       if(input$PCA_data_subset == "subsetted dataset") {
-        cat("The data was subsetted for" , input$PCA_subset_T, " and the shown PCA is representing samples belonging to the subset ", input$PCA_subset_S,".")
+        cat(" The data was subsetted for" , input$PCA_subset_T, "and the shown PCA is representing samples belonging to the subset ", input$PCA_subset_S,".")
       }
       
       # Data curation:
@@ -5102,7 +5101,13 @@ function(input, output) {
   )
   
   output$Eigen_data_table <- renderDataTable({
-    PCA_eigen_data()
+    our_table <- PCA_eigen_data()
+    for(i in 1:ncol(our_table)){
+      if(class(our_table[,i]) == "numeric"){
+        our_table[,i] <- round(our_table[,i], digits = 4)
+      }
+    }
+    our_table
   })
   
   
@@ -5151,24 +5156,14 @@ function(input, output) {
     filename = function(){paste("PCA contributions plot MVApp", "pdf" , sep=".") },
     content = function(file) {
       pdf(file)
-      beginCol <-
-        length(c(
-          input$SelectIV,
-          input$SelectGeno,
-          input$SelectTime,
-          input$SelectID
-        )) 
-      endCol <-ncol(PCA_final_data())
       PCA_ready <- PCA_final_data()
-      PCA_ready <- PCA_ready[, beginCol : endCol]
       res.pca <- PCA(PCA_ready, graph = FALSE)
       mid=median(res.pca$var$contrib)
-      fviz_pca_var(res.pca, axes = c(as.numeric(input$Which_PC1),as.numeric(input$Which_PC2)), col.var="contrib", geom ="auto", labelsize = 4, repel=T, label="var", addlabels=T, invisible = "none") +
-        scale_color_gradient2(low="grey", mid="purple", 
-                              high="red", midpoint=mid)+theme_bw()
-    dev.off()
-      })
-  
+      a <- fviz_pca_var(res.pca, axes = c(as.numeric(input$Which_PC1),as.numeric(input$Which_PC2)), col.var="contrib", geom ="auto", labelsize = 4, repel=T, label="var", addlabels=T, invisible = "none")
+      a <- a + scale_color_gradient2(low="grey", mid="purple", high="red", midpoint=mid)+theme_bw()
+      print(a)
+      dev.off()
+    })
   
   #### FIGURE LEGEND ####
   output$PCA_contribution_legend_show <- renderUI({
@@ -5197,16 +5192,22 @@ function(input, output) {
           which_ones <- input$DV_outliers
         }}
       
+      Eig_table <- PCA_eigen_data()
+      Variance_explained_x <- Eig_table[input$Which_PC1,2]
+      Variance_explained_y <- Eig_table[input$Which_PC2,2]
       
       cat("# # > > > Figure legend: < < < # # #")
       cat("\n")
       cat("\n")
-      cat("Contribution and directionality of traits in each principle component. The contribution of each trait within the principle component is indicated by the length and color of the arrow and the direction indicates a negative or positive contribution with respect to the other prinicple components.")
-      cat(" PCA was performed using", input$PCA_data, ".")
+      cat("Trait contributions to PC", input$Which_PC1, "and PC", input$Which_PC2, ".") 
+      cat(" The contribution to PC", input$Which_PC1, "is shown on the x-axis, while the contribution to PC", input$Which_PC2, " is on the y-axis.")
+      cat(" Each trait's contribution to the selected principle component is indicated by the length and color of the arrow.") 
+      cat(" PCA was performed on", input$PCA_data, "using the following traits:(", input$PCA_pheno,").")
       
       if(input$PCA_data_subset == "subsetted dataset") {
-        cat("The data was subsetted for" , input$PCA_subset_T, " and the shown PCA is representing samples belonging to the subset ", input$PCA_subset_S, ".")
+        cat(" The data was subsetted for" , input$PCA_subset_T, "and the shown PCA represents samples that belong to the subset ", input$PCA_subset_S, ".")
       }
+        #cat(" PC", input$Which_PC1, "explains ", Variance_explained_x, "%, while PC", input$Which_PC2, "is explaining", Variance_explained_y, "% of the observed variance.")
       
       # Data curation:
       if(input$PCA_data == "outliers removed data"){    
@@ -5254,22 +5255,13 @@ function(input, output) {
   })
   
   output$Contrib_trait_plot_download <- downloadHandler(
-    filename = function(){paste("PCA scatterplot MVApp", "pdf" , sep=".") },
+    filename = function(){paste("Trait contribution per PC plot MVApp", "pdf" , sep=".") },
     content = function(file) {
       pdf(file)
-      beginCol <-
-        length(c(
-          input$SelectIV,
-          input$SelectGeno,
-          input$SelectTime,
-          input$SelectID
-        )) 
-      endCol <-ncol(PCA_final_data())
       PCA_ready <- PCA_final_data()
-      PCA_ready <- PCA_ready[, beginCol : endCol]
       res.pca <- PCA(PCA_ready, graph = FALSE)
-      fviz_contrib(res.pca, choice = 'var', axes = c(as.numeric(input$Which_PC_contrib)), xtickslab.rt = 90)
-     
+      a <- fviz_contrib(res.pca, choice = 'var', axes = c(as.numeric(input$Which_PC_contrib)), xtickslab.rt = 90)
+      print(a)
       dev.off()
       })
   
@@ -5300,16 +5292,23 @@ function(input, output) {
           which_ones <- input$DV_outliers
         }}
       
-      
-      cat("# # > > > Figure legend: < < < # # #")
+      #Contrib_table <-  PCA_contrib_var()
+      #Variance_explained <- Contrib_table[input$Which_PC_contrib,2]
+
+           cat("# # > > > Figure legend: < < < # # #")
       cat("\n")
       cat("\n")
-      cat(" Contribution of the selected traits to each principle component, where the contribution refers to the percentage of the explained variance.")
-      cat(" PCA was performed using", input$PCA_data, ".")
+      cat(" Contributions of the selected traits to PC", input$Which_PC_contrib ,".")
+      cat(" Traits are shown on the x-axis, while the degree of contribution to PC",input$Which_PC_contrib , "is on the y-axis.")
+      cat(" The red line represents a reference of the expected value if the contribution was uniform.")
+      cat(" For a given PC, any trait with a contribution above the reference line can be considered an important contributor to that PC.")
+      cat(" PCA was performed on", input$PCA_data, "using the following traits: (", input$PCA_pheno,").")
       
       if(input$PCA_data_subset == "subsetted dataset") {
-        cat("The data was subsetted for" , input$PCA_subset_T, " and the shown PCA is representing samples belonging to the subset ", input$PCA_subset_S, ".")
+        cat(" The data was subsetted for" , input$PCA_subset_T, "and the shown PCA represents samples that belong to the subset ", input$PCA_subset_S, ".")
       }
+       # cat(" PC", input$Which_PC_contrib, " explains ", Variance_explained, "% of the observed variance.") ###  Didn't work :/
+      
       
       # Data curation:
       if(input$PCA_data == "outliers removed data"){    
@@ -5343,6 +5342,14 @@ function(input, output) {
   
   output$PCA_contribution_var <- renderDataTable({
     PCA_contrib_var()
+    our_table <- PCA_contrib_var()
+    
+    for(i in 1:ncol(our_table)){
+      if(class(our_table[,i]) == "numeric"){
+        our_table[,i] <- round(our_table[,i], digits = 4)
+      }
+    }
+    our_table
   })
   
   output$Contrib_download_var <- renderUI({
@@ -5402,6 +5409,14 @@ function(input, output) {
   
   output$PCA_coordinates_ind <- renderDataTable({
     PCA_coord_ind()
+    our_table <- PCA_coord_ind()
+    
+    for(i in 1:ncol(our_table)){
+      if(class(our_table[,i]) == "numeric"){
+        our_table[,i] <- round(our_table[,i], digits = 4)
+      }
+    }
+    our_table
   })
   
   output$Coord_download_ind <- renderUI({
@@ -5425,7 +5440,7 @@ function(input, output) {
     la_table$y_axis <- la_table[,input$Which_PC2]
     la_table$color <- la_table[,input$PCA_Color]
     super_plot <- ggplot(data = la_table, aes(x = x_axis, y= y_axis, colour = color))
-    super_plot <- super_plot + geom_point()
+    super_plot <- super_plot + geom_point() #geom_point(aes(text=id))
     super_plot <- super_plot + xlab(PC_x_axis)
     super_plot <- super_plot + ylab(PC_y_axis)
     super_plot
@@ -5440,8 +5455,8 @@ function(input, output) {
       PC_y_axis <- paste('Dim', input$Which_PC2)  
       la_table$x_axis <- la_table[,input$Which_PC1]
       la_table$y_axis <- la_table[,input$Which_PC2]
-      la_table$color <- la_table[,input$PCA_Color]
-      super_plot <- ggplot(data = la_table, aes(x = x_axis, y= y_axis, colour = color))
+      la_table$Subset <- la_table[,input$PCA_Color] ### would be nice to make it input$PCA_subset_S
+      super_plot <- ggplot(data = la_table, aes(x = x_axis, y= y_axis, colour = Subset))
       super_plot <- super_plot + geom_point()
       super_plot <- super_plot + xlab(PC_x_axis)
       super_plot <- super_plot + ylab(PC_y_axis)
@@ -5478,16 +5493,22 @@ function(input, output) {
           which_ones <- input$DV_outliers
         }}
       
+      Eig_table <- PCA_eigen_data()
+      Variance_explained_x <- Eig_table[input$Which_PC1,2]
+      Variance_explained_y <- Eig_table[input$Which_PC2,2]
       
       cat("# # > > > Figure legend: < < < # # #")
       cat("\n")
       cat("\n")
-      cat(" Coordinates of the selected principle components, colored and grouped based on the selected grouping variable." )
-      cat(" PCA was performed using", input$PCA_data, ".")
+      cat("Coordinates of PC",  input$Which_PC1, "and PC", input$Which_PC2, ".")
+      cat(" Each sample's coordinates for PC", input$Which_PC1, "are plotted on the x-axis, while the coordinates for PC", input$Which_PC2, " are on the y-axis.")
+      cat(" Different colors represent the samples that belong to different", input$PCA_Color, ".")
+      cat(" PCA was performed on", input$PCA_data, "using the following traits:(", input$PCA_pheno,").")
       
       if(input$PCA_data_subset == "subsetted dataset") {
-        cat("The data was subsetted for" , input$PCA_subset_T, " and the shown PCA is representing samples belonging to the subset ", input$PCA_subset_S, ".")
+        cat(" The data was subsetted for" , input$PCA_subset_T, "and the shown PCA represents samples belonging to the subset ", input$PCA_subset_S, ".")
       }
+      cat(" PC", input$Which_PC1, "explains ", round(Variance_explained_x, digits = 4), "%, while PC", input$Which_PC2, "is explaining", round(Variance_explained_y, digits = 4), "% of the observed variance.")
       
       # Data curation:
       if(input$PCA_data == "outliers removed data"){    
@@ -5512,12 +5533,7 @@ function(input, output) {
     }   
   })
   
-  # - -  - - - - - - - >> Categorical PCA <<- - - - - - - - - - - - 
-  
-  
-  
-  
-  
+
   # - - - - - - - - - - - - - - >> MDS <<- - - - - - - - - - - - - 
   
   output$MDS_Pheno_data <- renderUI({
@@ -5648,7 +5664,6 @@ function(input, output) {
     
     if(input$MDS_Scale_Q == T){
       temp3 <- scale(temp3)
-      #colnames(temp2)[1] <- "id"
     }
     
     return(temp3)
@@ -5698,7 +5713,7 @@ function(input, output) {
       super_plot <- ggplot(data = data, aes(x = Dim1, y= Dim2))
     }
     
-    super_plot <- super_plot + geom_point()
+    super_plot <- super_plot + geom_point() #geom_point(aes(text=id))
     super_plot <- super_plot + xlab("Dimension 1")
     super_plot <- super_plot + ylab("Dimension 2")
     super_plot
@@ -5759,11 +5774,13 @@ function(input, output) {
       cat("# # > > > Figure legend: < < < # # #")
       cat("\n")
       cat("\n")
-      cat(" Coordinates of MDS dimensions based on the selected traits. Colors indicate different k-means clusters. " )
-      cat(" MDS was performed using", input$MDS_data, ".")
+      cat(" Coordinates of samples scaled using MDS.")
+      if(input$MDS_KMC_Q == T){
+      cat(" Color groups indicate the samples belonging to distinct k-means clusters. The selected number of clusters is", input$MDS_cluster_number, "." )}
+      cat(" MDS was performed on", input$MDS_data, "using the following traits:(", input$MDS_pheno,").")
       
       if(input$MDS_subset_Q == "subsetted dataset") {
-        cat("The data was subsetted for" , input$MDS_subset_T, " and the shown MDS is representing samples belonging to the subset ", input$MDS_subset_S, ".")
+        cat("The data was subsetted for" , input$MDS_subset_T, " and the shown MDS represents samples that belong to the subset ", input$MDS_subset_S, ".")
       }
       
       # Data curation:
@@ -5791,6 +5808,12 @@ function(input, output) {
   
   output$MDS_table_samples  <- renderDataTable({
     data <- MDS_Calculations()
+    
+    for(i in 1:ncol(data)){
+      if(class(data[,i]) == "numeric"){
+        data[,i] <- round(data[,i], digits = 4)
+      }
+    }
     data
   })
   
@@ -5845,9 +5868,21 @@ function(input, output) {
     
     if(input$MDS_KMC_Q == T){
       data_sub <- subset(data, select = c(Dim1, Dim2, K_cluster))
-    }
+      for(i in 1:ncol(data_sub)){
+        if(class(data_sub[,i]) == "numeric"){
+          data[,i] <- round(data_sub[,i], digits = 4)
+        }
+      }
+      data
+      }
     else{
       data_sub <- subset(data, select = c(Dim1, Dim2))
+    }
+    data_sub
+    for(i in 1:ncol(data_sub)){
+      if(class(data_sub[,i]) == "numeric"){
+        data[,i] <- round(data_sub[,i], digits = 4)
+      }
     }
     data_sub
   })
@@ -5949,11 +5984,14 @@ function(input, output) {
       cat("# # > > > Figure legend: < < < # # #")
       cat("\n")
       cat("\n")
-      cat(" Scaled traits based on MDS dimension coordinates. Traits that are close in proximity are more related, while more distant traits are less related. Colors indicate different k-means clusters." ) #### Need to change :P
-      cat(" MDS was performed using", input$MDS_data, ".")
+      cat(" Coordinates of traits scaled using MDS.")
+      if(input$MDS_KMC_Q == T){
+      cat(" Color groups indicate the samples belonging to distinct k-means clusters. The selected number of clusters is", input$MDS_cluster_number, "." )}
+      cat(" Traits close in proximity are more related than distant traits.")
+      cat(" MDS was performed on", input$MDS_data, "using the following traits:(", input$MDS_pheno,").")
       
       if(input$MDS_subset_Q == "subsetted dataset") {
-        cat("The data was subsetted for" , input$MDS_subset_T, " and the shown MDS is representing samples belonging to the subset ", input$MDS_subset_S, ".")
+        cat("The data was subsetted for" , input$MDS_subset_T, " and the shown MDS represents samples that belong to the subset ", input$MDS_subset_S, ".")
       }
       
       # Data curation:

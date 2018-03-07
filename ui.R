@@ -42,9 +42,9 @@ fluidPage(
         br(),
         h4("6. Examine the correlations for all traits as well as for subsets of your data and easily determine the correlations that are changing depending on the Genotype, Treatment or any other selected independent variable."),
         br(),
-        h4("7. Perform PCA analysis, examine which traits are contributing significantly to the most informative PCs and retrieve the coordinates of your samples."),
+        h4("7. Perform principle component analysis, examine which traits are contributing significantly to the most informative PCs and retrieve the coordinates of your samples."),
         br(),
-        h4("8. Perform Multidimentional Scaling to detect the patterns in your data based on the relationships between your samples"),
+        h4("8. Perform multidimensional scaling to detect the patterns in your data based on the relationships between your samples"),
         br(),
         h4("9. Cluster your samples based on the selected traits and perform cluster validation analysis."),
         br(),
@@ -429,7 +429,7 @@ fluidPage(
              )),
     # Tab 7 = = = = = = = = = = = = = = >> PCA ANALYSIS << = = = = = = = = = = = = = = = = = = 
     
-    tabPanel("Reduction of dimentionality", icon = icon("object-group"),
+    tabPanel("Dimensionality reduction", icon = icon("object-group"),
              navbarPage("",
                         tabPanel("Principle Component Analysis",
                                  sidebarPanel(
@@ -525,8 +525,6 @@ fluidPage(
                                                        column(12,checkboxInput("show_MDSsampleT_legend", "Show figure legend"),
                                                               uiOutput("MDSsampleT_legend_show")),
                                                        hr()
-                                                       #uiOutput("MDS_download_transposed"),
-                                                       #dataTableOutput("MDS_sample_table_transposed_dt")
                                               )
                                    ))))
              # end Tab 7
