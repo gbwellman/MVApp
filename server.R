@@ -5398,11 +5398,12 @@ function(input, output) {
       temp$id <- do.call(paste,c(temp[c(input$SelectGeno, input$SelectIV, input$SelectTime, input$SelectID)], sep="_"))
       temp2 <- temp
     }}
-    temp4 <- subset(temp2, select = c(input$SelectGeno, input$SelectIV, input$SelectTime, input$SelectID))
+    temp4 <- subset(temp2, select = c(input$SelectGeno, input$SelectIV, input$SelectTime, input$SelectID, "id"))
     
     temporary <- res.pca$ind$coord
     
     la_table <- cbind(temp4, temporary)
+    
     names(la_table) <- gsub("Dim.", "", names(la_table), fixed=T)
     la_table
   })
@@ -5440,9 +5441,10 @@ function(input, output) {
     la_table$y_axis <- la_table[,input$Which_PC2]
     la_table$color <- la_table[,input$PCA_Color]
     super_plot <- ggplot(data = la_table, aes(x = x_axis, y= y_axis, colour = color))
-    super_plot <- super_plot + geom_point() #geom_point(aes(text=id))
+    super_plot <- super_plot + geom_point(aes(text=id))
     super_plot <- super_plot + xlab(PC_x_axis)
     super_plot <- super_plot + ylab(PC_y_axis)
+    super_plot <- super_plot + guides(colour=guide_legend(title= input$PCA_Color))
     super_plot
   })
   
@@ -5451,8 +5453,8 @@ function(input, output) {
     content = function(file) {
       pdf(file)
       la_table <- PCA_coord_ind()
-      PC_x_axis <- paste('Dim', input$Which_PC1)
-      PC_y_axis <- paste('Dim', input$Which_PC2)  
+      PC_x_axis <- paste('Dim', input$Which_PC1, sep=".")
+      PC_y_axis <- paste('Dim', input$Which_PC2, sep=".")  
       la_table$x_axis <- la_table[,input$Which_PC1]
       la_table$y_axis <- la_table[,input$Which_PC2]
       la_table$Subset <- la_table[,input$PCA_Color] ### would be nice to make it input$PCA_subset_S
@@ -5460,6 +5462,7 @@ function(input, output) {
       super_plot <- super_plot + geom_point()
       super_plot <- super_plot + xlab(PC_x_axis)
       super_plot <- super_plot + ylab(PC_y_axis)
+      super_plot <- super_plot + guides(colour=guide_legend(title= input$PCA_Color))
       super_plot
       
       print(super_plot)
@@ -5704,7 +5707,7 @@ function(input, output) {
   
   output$MDS_sample_graph <- renderPlotly({
     data <- MDS_Calculations()
-    
+
     if(input$MDS_KMC_Q == T){
       super_plot <- ggplot(data = data, aes(x = Dim1, y= Dim2, colour = K_cluster))
     }
@@ -5713,7 +5716,7 @@ function(input, output) {
       super_plot <- ggplot(data = data, aes(x = Dim1, y= Dim2))
     }
     
-    super_plot <- super_plot + geom_point() #geom_point(aes(text=id))
+    super_plot <- super_plot + geom_point(aes(text=id))
     super_plot <- super_plot + xlab("Dimension 1")
     super_plot <- super_plot + ylab("Dimension 2")
     super_plot
